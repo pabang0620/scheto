@@ -1,0 +1,115 @@
+.touch-ripple-container {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.touch-ripple-container:active {
+  opacity: 0.8;
+  transform: scale(0.98);
+}
+
+.touch-ripple-container.disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.touch-ripple-container.disabled:active {
+  transform: none;
+  opacity: 0.6;
+}
+
+.ripples-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0);
+  animation: ripple-animation ease-out forwards;
+  opacity: 1;
+}
+
+@keyframes ripple-animation {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0;
+  }
+}
+
+/* Enhanced touch feedback for mobile */
+@media (hover: none) and (pointer: coarse) {
+  .touch-ripple-container:active {
+    opacity: 0.7;
+    transform: scale(0.96);
+  }
+}
+
+/* Accessibility improvements */
+.touch-ripple-container:focus {
+  outline: 2px solid var(--primary-color, #007AFF);
+  outline-offset: 2px;
+}
+
+.touch-ripple-container:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Ensure minimum touch target size */
+.touch-ripple-container {
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Variations for different ripple colors */
+.touch-ripple-container.primary .ripple {
+  background-color: rgba(0, 122, 255, 0.3);
+}
+
+.touch-ripple-container.secondary .ripple {
+  background-color: rgba(142, 142, 147, 0.3);
+}
+
+.touch-ripple-container.danger .ripple {
+  background-color: rgba(255, 59, 48, 0.3);
+}
+
+.touch-ripple-container.success .ripple {
+  background-color: rgba(52, 199, 89, 0.3);
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .touch-ripple-container.primary .ripple {
+    background-color: rgba(10, 132, 255, 0.4);
+  }
+  
+  .touch-ripple-container.secondary .ripple {
+    background-color: rgba(174, 174, 178, 0.4);
+  }
+}

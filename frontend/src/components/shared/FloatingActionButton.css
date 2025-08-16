@@ -1,0 +1,299 @@
+/* FloatingActionButton.css - Material Design inspired FAB */
+
+.floating-action-button {
+  position: fixed;
+  width: 56px;
+  height: 56px;
+  border-radius: 28px;
+  background: #007AFF;
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3), 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all var(--animation-normal) cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1001;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+.floating-action-button:hover:not(.dragging) {
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(0, 122, 255, 0.4), 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.floating-action-button:active:not(.dragging) {
+  transform: scale(0.95);
+}
+
+.floating-action-button.dragging {
+  transform: scale(1.2);
+  box-shadow: 0 8px 24px rgba(0, 122, 255, 0.5), 0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: none;
+  z-index: 1002;
+}
+
+.floating-action-button.expanded {
+  background: #FF3B30;
+  transform: rotate(45deg);
+}
+
+.floating-action-button.expanded:hover {
+  transform: rotate(45deg) scale(1.1);
+}
+
+.fab-icon {
+  font-size: 20px;
+  transition: transform var(--animation-normal) cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.floating-action-button.expanded .fab-icon {
+  transform: rotate(-45deg);
+}
+
+/* Backdrop */
+.fab-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 999;
+  animation: fab-backdrop-fade-in var(--animation-fast) ease-out;
+}
+
+@keyframes fab-backdrop-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Action Buttons */
+.fab-actions {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 1000;
+  pointer-events: auto;
+}
+
+.fab-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: auto;
+  min-width: 48px;
+  height: 48px;
+  border-radius: 24px;
+  background: white;
+  color: white;
+  border: none;
+  cursor: pointer;
+  padding: 0 16px 0 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all var(--animation-fast) cubic-bezier(0.4, 0, 0.2, 1);
+  animation: fab-action-slide-up var(--animation-normal) cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  opacity: 0;
+  transform: translateY(20px) scale(0.8);
+  user-select: none;
+  -webkit-user-select: none;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.fab-action:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.fab-action:active {
+  transform: translateY(0) scale(0.95);
+}
+
+.fab-action i {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.fab-action-label {
+  white-space: nowrap;
+  font-weight: 500;
+  color: white;
+}
+
+@keyframes fab-action-slide-up {
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Mini FAB variant */
+.floating-action-button.mini {
+  width: 40px;
+  height: 40px;
+  border-radius: 20px;
+}
+
+.floating-action-button.mini .fab-icon {
+  font-size: 16px;
+}
+
+/* Extended FAB variant */
+.floating-action-button.extended {
+  width: auto;
+  min-width: 56px;
+  height: 48px;
+  border-radius: 24px;
+  padding: 0 16px;
+  gap: 8px;
+}
+
+.fab-label {
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Hide on larger screens where it's less needed */
+@media (min-width: 1024px) {
+  .floating-action-button {
+    display: none;
+  }
+}
+
+/* Adjust for very small screens */
+@media (max-width: 360px) {
+  .floating-action-button {
+    width: 48px;
+    height: 48px;
+    border-radius: 24px;
+  }
+  
+  .fab-icon {
+    font-size: 18px;
+  }
+  
+  .fab-action {
+    height: 40px;
+    border-radius: 20px;
+    padding: 0 12px 0 8px;
+  }
+  
+  .fab-action i {
+    font-size: 14px;
+  }
+  
+  .fab-action-label {
+    font-size: 12px;
+  }
+}
+
+/* Safe area support */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .floating-action-button {
+    bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+}
+
+/* Keyboard navigation support */
+.floating-action-button:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 2px;
+}
+
+.fab-action:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 2px;
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .floating-action-button,
+  .fab-action,
+  .fab-icon,
+  .fab-backdrop {
+    transition: none;
+    animation: none;
+  }
+  
+  .floating-action-button:hover,
+  .floating-action-button:active,
+  .floating-action-button.dragging,
+  .floating-action-button.expanded:hover {
+    transform: none;
+  }
+  
+  .fab-action:hover,
+  .fab-action:active {
+    transform: none;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .floating-action-button {
+    border: 2px solid white;
+    background: #000080;
+  }
+  
+  .fab-action {
+    border: 1px solid #333;
+    background: white;
+    color: #333;
+  }
+  
+  .fab-action-label {
+    color: #333;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .floating-action-button {
+    background: #0A84FF;
+    box-shadow: 0 4px 12px rgba(10, 132, 255, 0.3), 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+  
+  .floating-action-button:hover:not(.dragging) {
+    box-shadow: 0 6px 16px rgba(10, 132, 255, 0.4), 0 4px 8px rgba(0, 0, 0, 0.4);
+  }
+  
+  .floating-action-button.dragging {
+    box-shadow: 0 8px 24px rgba(10, 132, 255, 0.5), 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+  
+  .fab-action {
+    background: #1C1C1E;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+  
+  .fab-backdrop {
+    background: rgba(0, 0, 0, 0.6);
+  }
+}
+
+/* Pulse animation for attention */
+@keyframes fab-pulse {
+  0% {
+    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3), 0 2px 4px rgba(0, 0, 0, 0.1), 0 0 0 0 rgba(0, 122, 255, 0.7);
+  }
+  70% {
+    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3), 0 2px 4px rgba(0, 0, 0, 0.1), 0 0 0 10px rgba(0, 122, 255, 0);
+  }
+  100% {
+    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3), 0 2px 4px rgba(0, 0, 0, 0.1), 0 0 0 0 rgba(0, 122, 255, 0);
+  }
+}
+
+.floating-action-button.pulse {
+  animation: fab-pulse 2s infinite;
+}

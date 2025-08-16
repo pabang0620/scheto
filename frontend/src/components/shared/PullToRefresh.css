@@ -1,0 +1,282 @@
+/* Pull to Refresh Container */
+.pull-to-refresh-container {
+  position: relative;
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Refresh Indicator */
+.pull-refresh-indicator {
+  position: absolute;
+  top: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 12px 20px;
+  box-shadow: 
+    0 4px 20px rgba(0, 0, 0, 0.1),
+    0 2px 8px rgba(0, 0, 0, 0.05);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  z-index: 100;
+  min-width: 140px;
+}
+
+.pull-refresh-indicator.visible {
+  opacity: 1;
+}
+
+.pull-refresh-indicator.refreshing {
+  top: 20px;
+  transform: translateX(-50%);
+}
+
+/* Refresh Spinner */
+.refresh-spinner {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+  position: relative;
+}
+
+.spinner-icon {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ios-blue, #007AFF);
+  font-size: 16px;
+  transition: transform 0.2s ease;
+}
+
+.spinner-icon.spinning {
+  animation: refresh-spin 1s linear infinite;
+}
+
+.spinner-icon.spinning i {
+  opacity: 0;
+}
+
+.spinner-icon.spinning::before {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--ios-blue, #007AFF);
+  border-top-color: transparent;
+  border-radius: 50%;
+  opacity: 1;
+}
+
+/* Refresh Text */
+.refresh-text {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ios-blue, #007AFF);
+  text-align: center;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+/* Content Area */
+.pull-refresh-content {
+  position: relative;
+  z-index: 1;
+}
+
+/* Elastic overscroll effect */
+.pull-to-refresh-container.elastic {
+  overscroll-behavior: none;
+}
+
+.pull-to-refresh-container.elastic::before {
+  content: '';
+  position: absolute;
+  top: -100px;
+  left: 0;
+  right: 0;
+  height: 100px;
+  background: linear-gradient(
+    to bottom, 
+    var(--ios-background, #F2F2F7) 0%,
+    transparent 100%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+}
+
+.pull-to-refresh-container.pulling::before {
+  opacity: 1;
+}
+
+/* Loading state overlay */
+.pull-refresh-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.pull-refresh-loading-overlay.active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* Animations */
+@keyframes refresh-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes refresh-bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-4px);
+  }
+  60% {
+    transform: translateY(-2px);
+  }
+}
+
+/* Success animation */
+@keyframes refresh-success {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+.pull-refresh-indicator.success {
+  animation: refresh-success 0.5s ease-out;
+}
+
+.pull-refresh-indicator.success .spinner-icon {
+  color: #34C759;
+}
+
+.pull-refresh-indicator.success .spinner-icon i::before {
+  content: '\f00c'; /* checkmark */
+}
+
+.pull-refresh-indicator.success .refresh-text {
+  color: #34C759;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .pull-refresh-indicator {
+    background: rgba(28, 28, 30, 0.95);
+    color: #FFFFFF;
+  }
+
+  .refresh-text,
+  .spinner-icon {
+    color: var(--ios-blue, #0A84FF);
+  }
+
+  .pull-to-refresh-container.elastic::before {
+    background: linear-gradient(
+      to bottom, 
+      #000000 0%,
+      transparent 100%
+    );
+  }
+
+  .pull-refresh-loading-overlay {
+    background: rgba(0, 0, 0, 0.8);
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .pull-refresh-indicator {
+    border: 2px solid var(--ios-blue, #007AFF);
+  }
+
+  .refresh-text,
+  .spinner-icon {
+    font-weight: 600;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .pull-refresh-indicator,
+  .spinner-icon,
+  .pull-to-refresh-container {
+    animation: none;
+    transition: none;
+  }
+
+  .spinner-icon.spinning {
+    animation: none;
+  }
+
+  .spinner-icon.spinning::before {
+    animation: none;
+    border: 2px solid var(--ios-blue, #007AFF);
+    border-top-color: var(--ios-blue, #007AFF);
+  }
+}
+
+/* Mobile specific adjustments */
+@media (max-width: 480px) {
+  .pull-refresh-indicator {
+    padding: 10px 16px;
+    min-width: 120px;
+  }
+
+  .refresh-spinner {
+    width: 28px;
+    height: 28px;
+    margin-bottom: 6px;
+  }
+
+  .spinner-icon {
+    width: 20px;
+    height: 20px;
+    font-size: 14px;
+  }
+
+  .refresh-text {
+    font-size: 11px;
+  }
+}

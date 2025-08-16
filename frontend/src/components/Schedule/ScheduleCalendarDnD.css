@@ -1,0 +1,832 @@
+/* Schedule Calendar DnD Container */
+.schedule-calendar-container {
+  padding: 20px;
+  background: var(--bg-secondary, #fafafa);
+  min-height: calc(100vh - 60px);
+}
+
+/* Calendar Toolbar */
+.calendar-toolbar {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.calendar-navigation {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.nav-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: #f0f2f5;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  color: #6b7684;
+}
+
+.nav-btn:hover {
+  background: #e5e8eb;
+  color: #191f28;
+}
+
+.calendar-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #191f28;
+  margin: 0;
+}
+
+.calendar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.today-btn {
+  padding: 10px 16px;
+  border: none;
+  background: white;
+  border: 1px solid #e5e8eb;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7684;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.today-btn:hover {
+  background: #f0f2f5;
+  color: #191f28;
+}
+
+.view-mode-buttons {
+  display: flex;
+  background: #f0f2f5;
+  border-radius: 10px;
+  padding: 4px;
+}
+
+.view-btn {
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7684;
+  transition: all 0.2s;
+}
+
+.view-btn.active {
+  background: white;
+  color: #191f28;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.view-btn:hover:not(.active) {
+  color: #191f28;
+}
+
+.add-main-btn {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  background: var(--primary-500, #3b5bdb);
+  color: white;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 600;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.add-main-btn:hover {
+  background: var(--primary-600, #2844b8);
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(59, 91, 219, 0.3);
+}
+
+/* Month View DnD */
+.month-view-dnd {
+  background: white;
+  border-radius: 16px;
+  overflow: visible;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.calendar-header {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  background: #f8f9fa;
+  border-bottom: 1px solid #e5e8eb;
+}
+
+.calendar-header .day-header {
+  padding: 16px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7684;
+  text-transform: uppercase;
+}
+
+.calendar-body {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-auto-rows: minmax(120px, auto);
+  gap: 0;
+}
+
+/* Day Cell DnD */
+.calendar-day-dnd {
+  border: 1px solid #f0f2f5;
+  padding: 8px;
+  min-height: 120px;
+  position: relative;
+  background: white;
+  transition: all 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.calendar-day-dnd:hover {
+  background: #fafbfc;
+}
+
+.calendar-day-dnd.today {
+  background: rgba(59, 91, 219, 0.08);
+  position: relative;
+}
+
+.calendar-day-dnd.today::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--primary-500, #3b5bdb);
+}
+
+.calendar-day-dnd.today .day-number {
+  color: var(--primary-500, #3b5bdb);
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 2px 4px rgba(59, 91, 219, 0.2);
+}
+
+.calendar-day-dnd.other-month {
+  background: #fafbfc;
+}
+
+.calendar-day-dnd.other-month .day-number {
+  color: #c7cdd5;
+}
+
+.calendar-day-dnd.drop-target {
+  background: rgba(59, 91, 219, 0.1);
+  border: 2px dashed var(--primary-500, #3b5bdb);
+}
+
+.calendar-day-dnd.drop-target.today {
+  background: rgba(59, 91, 219, 0.15);
+}
+
+.calendar-day-dnd .day-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.day-number {
+  font-size: 14px;
+  font-weight: 500;
+  color: #191f28;
+}
+
+.add-schedule-btn {
+  width: 16px !important;
+  height: 16px !important;
+  min-width: unset !important;
+  min-height: unset !important;
+  border: none;
+  background: rgba(59, 91, 219, 0.08);
+  color: var(--primary-500, #3b5bdb);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  opacity: 1;
+  transition: all 0.2s;
+  font-size: 10px !important;
+  flex-shrink: 0;
+}
+
+.add-schedule-btn:hover {
+  background: var(--primary-500, #3b5bdb);
+  color: white;
+}
+
+/* Schedule Items DnD */
+.day-schedules {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.schedule-item-dnd {
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: grab;
+  transition: all 0.2s;
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid transparent;
+}
+
+.schedule-item-dnd:active {
+  cursor: grabbing;
+}
+
+.schedule-item-dnd:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+.schedule-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.schedule-employee {
+  font-weight: 500;
+  color: #191f28;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.schedule-time {
+  font-size: 11px;
+  color: #6b7684;
+  white-space: nowrap;
+}
+
+.drag-handle {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8b95a1;
+  opacity: 0;
+  transition: opacity 0.2s;
+  cursor: grab;
+}
+
+.schedule-item-dnd:hover .drag-handle {
+  opacity: 1;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+/* Shift Colors */
+.shift-morning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.shift-afternoon {
+  background: #dbeafe;
+  color: #1e3a8a;
+}
+
+.shift-evening {
+  background: #e9d5ff;
+  color: #581c87;
+}
+
+.shift-night {
+  background: #e0e7ff;
+  color: #312e81;
+}
+
+.shift-default {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+/* Leave Styling */
+.schedule-on-leave {
+  opacity: 0.5;
+  text-decoration: line-through;
+  background: #f3f4f6 !important;
+  color: #6b7684 !important;
+  border: 1px dashed #d1d5db !important;
+}
+
+.schedule-on-leave .schedule-employee {
+  color: #6b7684 !important;
+}
+
+.schedule-on-leave .schedule-time {
+  color: #9ca3af !important;
+}
+
+/* Schedule Employee Row */
+.schedule-employee-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+/* Leave Badge */
+.leave-badge {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  border-radius: 4px;
+  padding: 1px 4px;
+  font-size: 9px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Day Info Container */
+.day-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+/* Leave Count */
+.leave-count {
+  font-size: 9px;
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  border-radius: 4px;
+  padding: 1px 4px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Employee Filter Banner */
+.employee-filter-banner {
+  background: #f0f8ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.05);
+}
+
+.filter-banner-content {
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.filter-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.filter-info i {
+  color: #3b82f6;
+  font-size: 16px;
+}
+
+.filter-text {
+  color: #1e40af;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.clear-filter-btn {
+  padding: 6px 12px;
+  border: 1px solid #3b82f6;
+  background: white;
+  color: #3b82f6;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.clear-filter-btn:hover {
+  background: #3b82f6;
+  color: white;
+}
+
+.clear-filter-btn i {
+  font-size: 12px;
+}
+
+/* Leave Info Banner */
+.leave-info-banner {
+  background: #fefefe;
+  border: 1px solid #e5e8eb;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.leave-banner-header {
+  background: #fef2f2;
+  border-bottom: 1px solid #fecaca;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #dc2626;
+}
+
+.leave-banner-header i {
+  font-size: 16px;
+}
+
+.leave-banner-content {
+  padding: 12px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.leave-banner-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f9fafb;
+  border: 1px solid #e5e8eb;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.leave-employee-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.leave-type-badge {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Leave Info Section (for flexible/shift work types) */
+.leave-info-section {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed #e5e8eb;
+}
+
+.leave-info-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 4px 0;
+  font-size: 11px;
+}
+
+.leave-employee {
+  color: #6b7684;
+  font-weight: 500;
+}
+
+.leave-type {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-size: 9px;
+  font-weight: 600;
+}
+
+
+/* Drag Overlay */
+.schedule-item-dnd.dragging {
+  opacity: 0.5;
+}
+
+/* DragOverlay specific styles */
+[data-dnd-dragging="true"] .schedule-item-dnd {
+  transform-origin: center center;
+  pointer-events: none;
+  opacity: 0.9;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  border: 1px solid rgba(70, 103, 222, 0.3);
+}
+
+/* Additional drag overlay styling */
+.dnd-context [data-dnd-name="DragOverlay"] {
+  z-index: 999;
+}
+
+.dnd-context [data-dnd-name="DragOverlay"] .schedule-item-dnd {
+  transform-origin: center center;
+  cursor: grabbing;
+  pointer-events: none;
+  position: relative;
+}
+
+/* Enhanced drag visual feedback */
+[data-dnd-name="DragOverlay"] .schedule-item-dnd {
+  transform-origin: center center !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25) !important;
+  opacity: 0.95 !important;
+  border: 2px solid rgba(70, 103, 222, 0.5) !important;
+  background: rgba(255, 255, 255, 0.98) !important;
+  backdrop-filter: blur(4px);
+}
+
+/* Loading State - uses global spinner styles from index.css */
+.loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 1rem;
+}
+
+/* Global spinner styles applied from index.css */
+
+.loading-spinner p {
+  margin-top: 16px;
+  font-size: 14px;
+  color: #8b95a1;
+}
+
+/* Error Message */
+.error-message {
+  padding: 12px 16px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 12px;
+  color: #ef4444;
+  font-size: 14px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.error-message::before {
+  content: '\f06a';
+  font-family: 'Font Awesome 5 Free';
+  font-weight: 900;
+  font-size: 14px;
+}
+
+/* Week View */
+.week-view-dnd {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.week-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  background: #f8f9fa;
+  border-bottom: 1px solid #e5e8eb;
+  padding: 16px 0;
+}
+
+.week-day-header {
+  text-align: center;
+  padding: 0 16px;
+}
+
+.week-day-header.today {
+  color: #4667de;
+}
+
+.day-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7684;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.day-date {
+  font-size: 20px;
+  font-weight: 700;
+  color: #191f28;
+}
+
+.week-body {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  min-height: 400px;
+}
+
+.week-day-column {
+  border-right: 1px solid #f0f2f5;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.week-day-column:last-child {
+  border-right: none;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .calendar-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .calendar-navigation {
+    justify-content: center;
+  }
+
+  .calendar-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .view-mode-buttons {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .add-main-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .calendar-week {
+    min-height: 100px;
+  }
+
+  .calendar-day-dnd {
+    min-height: 100px;
+    padding: 4px;
+  }
+
+  .schedule-item-dnd {
+    padding: 4px 6px;
+    font-size: 11px;
+  }
+
+  .schedule-time {
+    display: none;
+  }
+
+  .drag-handle {
+    display: none;
+  }
+
+  /* Mobile Leave Styling */
+  .leave-info-banner {
+    margin-bottom: 12px;
+  }
+
+  .leave-banner-content {
+    padding: 8px 12px;
+    gap: 6px;
+  }
+
+  .leave-banner-item {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+
+  .leave-employee-name {
+    font-size: 12px;
+  }
+
+  .leave-type-badge {
+    font-size: 10px;
+    padding: 1px 4px;
+  }
+
+  .leave-count {
+    font-size: 8px;
+    padding: 1px 3px;
+  }
+
+  .leave-badge {
+    font-size: 8px;
+    padding: 1px 3px;
+  }
+
+  .schedule-employee-row {
+    gap: 2px;
+  }
+
+  .leave-info-section {
+    margin-top: 4px;
+    padding-top: 4px;
+  }
+
+  .leave-info-item {
+    font-size: 10px;
+    padding: 2px 0;
+  }
+
+  .leave-type {
+    font-size: 8px;
+    padding: 1px 3px;
+  }
+
+  /* Mobile Employee Filter Banner */
+  .employee-filter-banner {
+    margin-bottom: 12px;
+  }
+
+  .filter-banner-content {
+    padding: 10px 12px;
+    gap: 8px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-info {
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .filter-text {
+    font-size: 13px;
+    text-align: center;
+  }
+
+  .clear-filter-btn {
+    padding: 8px 12px;
+    font-size: 12px;
+    justify-content: center;
+  }
+}

@@ -1,0 +1,398 @@
+/* Page Transition Container */
+.page-transition {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.page-transition.fadeIn {
+  animation: fadeIn 0.3s var(--ease-out) forwards;
+}
+
+.page-transition.fadeOut {
+  animation: fadeOut 0.15s var(--ease-out) forwards;
+}
+
+/* Route Transition Container */
+.route-transition {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.route-transition.slide-left {
+  animation: slideInLeft 0.3s var(--ease-out);
+}
+
+.route-transition.slide-right {
+  animation: slideInRight 0.3s var(--ease-out);
+}
+
+/* Swipe Back Detector */
+.swipe-back-detector {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Add swipe progress indicator */
+.swipe-back-detector::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(to bottom, var(--ios-blue, #007AFF), transparent);
+  opacity: var(--swipe-progress, 0);
+  z-index: 1000;
+  transition: opacity 0.1s ease;
+  border-radius: 0 2px 2px 0;
+}
+
+/* iOS-style slide animations */
+@keyframes slideInLeft {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutLeft {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+/* Fade transitions */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+}
+
+/* Stack-style transitions (iOS modal style) */
+.route-transition.stack-up {
+  animation: stackUp 0.4s var(--spring-timing);
+}
+
+.route-transition.stack-down {
+  animation: stackDown 0.3s var(--ease-out);
+}
+
+@keyframes stackUp {
+  from {
+    transform: translateY(100%) scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes stackDown {
+  from {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(100%) scale(0.95);
+    opacity: 0;
+  }
+}
+
+/* Push/Pop transitions (Android style) */
+.route-transition.push-left {
+  animation: pushLeft 0.25s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+.route-transition.pop-right {
+  animation: popRight 0.25s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+@keyframes pushLeft {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes popRight {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* Zoom transitions */
+.route-transition.zoom-in {
+  animation: zoomIn 0.3s var(--ease-out);
+}
+
+.route-transition.zoom-out {
+  animation: zoomOut 0.2s var(--ease-out);
+}
+
+@keyframes zoomIn {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes zoomOut {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+}
+
+/* Parallax-style transitions */
+.route-transition.parallax-left {
+  animation: parallaxLeft 0.4s var(--ease-out);
+}
+
+.route-transition.parallax-right {
+  animation: parallaxRight 0.4s var(--ease-out);
+}
+
+@keyframes parallaxLeft {
+  from {
+    transform: translateX(50%) scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes parallaxRight {
+  from {
+    transform: translateX(-50%) scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
+}
+
+/* Interactive swipe feedback */
+.route-transition.swiping {
+  transform: translateX(calc(var(--swipe-progress, 0) * 100px));
+  transition: none;
+  will-change: transform;
+}
+
+.route-transition.swiping::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, calc(0.1 * (1 - var(--swipe-progress, 0))));
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Loading state during transitions */
+.route-transition.loading {
+  position: relative;
+}
+
+.route-transition.loading::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--ios-blue, #007AFF),
+    transparent
+  );
+  animation: loadingBar 1s ease-in-out infinite;
+  z-index: 1000;
+}
+
+@keyframes loadingBar {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Accessibility: Reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  .page-transition,
+  .route-transition {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .page-transition.fadeIn,
+  .page-transition.fadeOut {
+    animation: reduceMotionFade 0.1s ease;
+  }
+
+  @keyframes reduceMotionFade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .swipe-back-detector::before {
+    display: none;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .swipe-back-detector::before {
+    background: #000000;
+    width: 6px;
+  }
+
+  .route-transition.loading::before {
+    height: 3px;
+    background: #000000;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .route-transition.swiping::after {
+    background: rgba(255, 255, 255, calc(0.1 * (1 - var(--swipe-progress, 0))));
+  }
+
+  .route-transition.loading::before {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      var(--ios-blue, #0A84FF),
+      transparent
+    );
+  }
+}
+
+/* Performance optimizations */
+.route-transition {
+  backface-visibility: hidden;
+  perspective: 1000px;
+  transform-style: preserve-3d;
+  will-change: transform, opacity;
+}
+
+/* Ensure smooth animations on lower-end devices */
+.route-transition * {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+/* Safe area adjustments for transitions */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .route-transition {
+    padding-top: env(safe-area-inset-top);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  /* Make transitions faster on mobile */
+  .route-transition.slide-left,
+  .route-transition.slide-right {
+    animation-duration: 0.25s;
+  }
+
+  .route-transition.stack-up {
+    animation-duration: 0.3s;
+  }
+
+  .page-transition.fadeIn,
+  .page-transition.fadeOut {
+    animation-duration: 0.2s;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Even faster on small screens */
+  .route-transition.slide-left,
+  .route-transition.slide-right {
+    animation-duration: 0.2s;
+  }
+
+  .route-transition.stack-up,
+  .route-transition.stack-down {
+    animation-duration: 0.25s;
+  }
+}

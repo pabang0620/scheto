@@ -1,0 +1,74 @@
+{
+  "name": "ScheduleAuto - Smart Scheduling Made Simple",
+  "short_name": "ScheduleAuto",
+  "description": "A comprehensive employee scheduling and management application with smart automation features",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#667eea",
+  "background_color": "#667eea",
+  "lang": "en",
+  "scope": "/",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [],
+  "shortcuts": [
+    {
+      "name": "View Schedule",
+      "short_name": "Schedule", 
+      "description": "View current schedule and upcoming shifts",
+      "url": "/schedule"
+    },
+    {
+      "name": "Employee Management",
+      "short_name": "Employees",
+      "description": "Manage employee information and assignments", 
+      "url": "/employees"
+    },
+    {
+      "name": "Auto Generate",
+      "short_name": "Auto Generate",
+      "description": "Automatically generate optimized schedules",
+      "url": "/auto-generate"
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "View analytics and overview",
+      "url": "/dashboard"
+    }
+  ],
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
+  "file_handlers": [
+    {
+      "action": "/import",
+      "accept": {
+        "text/csv": [".csv"],
+        "application/vnd.ms-excel": [".xls"],
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"]
+      }
+    }
+  ],
+  "protocol_handlers": [
+    {
+      "protocol": "web+scheduleauto",
+      "url": "/handle?url=%s"
+    }
+  ],
+  "share_target": {
+    "action": "/share",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "display_override": ["window-controls-overlay", "standalone"],
+  "handle_links": "preferred"
+}

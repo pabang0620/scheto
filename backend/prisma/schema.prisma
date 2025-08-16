@@ -1,0 +1,181 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  name      String    // User's name
+  password  String    // Plain text password as requested
+  role      String    @default("employee") // employee, manager, admin
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  
+  // Relations
+  employee  Employee?
+  company   Company?
+  reviewedLeaves Leave[] @relation("reviewer")
+  
+  @@map("users")
+}
+
+model Company {
+  id           Int      @id @default(autoincrement())
+  userId       Int      @unique
+  companyName  String
+  industry     String   // healthcare, restaurant, military, retail, etc.
+  companySize  String   // small(1-50), medium(51-200), large(201-500), enterprise(500+)
+  address      String?
+  phone        String?
+  workType     String   @default("flexible") // fixed, flexible, shift
+  workDays     Json?    // ["mon", "tue", "wed", "thu", "fri"] for fixed type
+  defaultStartTime String? @default("09:00") // Default work start time
+  defaultEndTime   String? @default("18:00") // Default work end time
+  showLeaveInSchedule Boolean @default(false) // Show leave employees in schedule
+  minStaffRequired Int?    // Minimum staff required per day
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("companies")
+}
+
+model Employee {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @unique
+  name       String
+  email      String   @unique
+  department String
+  position   String
+  phone      String?
+  address    String?
+  hireDate   DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  // Relations
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  abilities   Ability[]
+  preferences Preference[]
+  schedules   Schedule[]
+  leaves      Leave[]
+  notes       EmployeeNote[]
+  chemistry1  EmployeeChemistry[] @relation("Employee1Chemistry")
+  chemistry2  EmployeeChemistry[] @relation("Employee2Chemistry")
+  
+  @@map("employees")
+}
+
+model Ability {
+  id             Int  @id @default(autoincrement())
+  employeeId     Int
+  experience     Int  @default(1) // 1-5 연차
+  workSkill      Int  @default(1) // 1-5 업무 능력
+  teamChemistry  Int  @default(1) // 1-5 사내 친밀도
+  customerService Int @default(1) // 1-5 고객 응대
+  flexibility    Int  @default(1) // 1-5 근무 유연성
+  totalScore     Int? // 합산 점수
+  rank           String? // S, A, B, C, D
+  
+  // Relations
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  @@unique([employeeId]) // One ability record per employee
+  @@map("abilities")
+}
+
+model Preference {
+  id           Int    @id @default(autoincrement())
+  employeeId   Int
+  preferDays   Json   // Array of preferred days ["monday", "tuesday", etc.]
+  avoidDays    Json   // Array of days to avoid
+  fixedOffDays Json   // Array of fixed off days
+  
+  // Relations
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  @@unique([employeeId]) // One preference record per employee
+  @@map("preferences")
+}
+
+model Schedule {
+  id         Int      @id @default(autoincrement())
+  employeeId Int
+  date       DateTime @db.Date
+  startTime  String   // HH:MM format
+  endTime    String   // HH:MM format
+  shiftType  String   @default("regular") // morning, afternoon, evening, night, regular
+  notes      String?  @db.Text
+  status     String   @default("scheduled") // scheduled, completed, cancelled
+  createdBy  Int?
+  updatedBy  Int?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  // Relations
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  @@index([date, employeeId])
+  @@index([employeeId, date, startTime])
+  @@map("schedules")
+}
+
+model Leave {
+  id           Int      @id @default(autoincrement())
+  employeeId   Int
+  startDate    DateTime @db.Date
+  endDate      DateTime @db.Date
+  type         String   // vacation, sick, personal, etc.
+  reason       String?
+  status       String   @default("pending") // pending, approved, rejected
+  adminComment String?  // 관리자 코멘트
+  reviewedAt   DateTime? // 검토 날짜
+  reviewedBy   Int?     // 검토한 관리자 ID
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relations
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  reviewer User?    @relation("reviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
+  
+  @@map("leaves")
+}
+
+model EmployeeNote {
+  id         Int      @id @default(autoincrement())
+  employeeId Int
+  type       String   // 'praise', 'caution', 'general'
+  content    String   @db.Text
+  priority   String   // 'high', 'medium', 'low'
+  createdBy  Int
+  createdAt  DateTime @default(now())
+  
+  // Relations
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  @@map("employee_notes")
+}
+
+model EmployeeChemistry {
+  id          Int @id @default(autoincrement())
+  employee1Id Int
+  employee2Id Int
+  score       Int @default(3) // 1-5 궁합 점수
+  
+  // Relations
+  employee1 Employee @relation("Employee1Chemistry", fields: [employee1Id], references: [id], onDelete: Cascade)
+  employee2 Employee @relation("Employee2Chemistry", fields: [employee2Id], references: [id], onDelete: Cascade)
+  
+  @@unique([employee1Id, employee2Id])
+  @@map("employee_chemistry")
+}

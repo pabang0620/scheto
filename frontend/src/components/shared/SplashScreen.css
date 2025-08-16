@@ -1,0 +1,267 @@
+.splash-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  overflow: hidden;
+}
+
+.splash-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  z-index: 3;
+  max-width: 90%;
+}
+
+.splash-logo {
+  position: relative;
+  margin-bottom: 2rem;
+}
+
+.logo-icon-splash {
+  width: 120px;
+  height: 120px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(20px);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 
+    0 15px 35px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  position: relative;
+  z-index: 2;
+}
+
+.logo-icon-splash i {
+  font-size: 3.5rem;
+  color: white;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.pulse-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 120px;
+  height: 120px;
+  border: 3px solid rgba(255, 255, 255, 0.6);
+  border-radius: 30px;
+  pointer-events: none;
+}
+
+.splash-title {
+  margin-bottom: 3rem;
+}
+
+.app-title {
+  color: white;
+  font-size: 3rem;
+  font-weight: 800;
+  margin: 0 0 0.5rem 0;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  letter-spacing: -1px;
+  background: linear-gradient(45deg, #ffffff, #f0f0f0);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.app-subtitle {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.2rem;
+  font-weight: 400;
+  margin: 0;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  letter-spacing: 0.5px;
+}
+
+.splash-loading {
+  width: 200px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.loading-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #ffffff, #f093fb);
+  border-radius: 2px;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.splash-background {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.floating-icon {
+  position: absolute;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 1.5rem;
+  pointer-events: none;
+}
+
+.gradient-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(40px);
+  pointer-events: none;
+}
+
+.orb-1 {
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(240, 147, 251, 0.3), transparent);
+  top: -100px;
+  right: -100px;
+}
+
+.orb-2 {
+  width: 250px;
+  height: 250px;
+  background: radial-gradient(circle, rgba(102, 126, 234, 0.3), transparent);
+  bottom: -80px;
+  left: -80px;
+}
+
+.version-info {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .logo-icon-splash {
+    width: 100px;
+    height: 100px;
+    border-radius: 25px;
+  }
+  
+  .logo-icon-splash i {
+    font-size: 2.8rem;
+  }
+  
+  .pulse-ring {
+    width: 100px;
+    height: 100px;
+    border-radius: 25px;
+  }
+  
+  .app-title {
+    font-size: 2.2rem;
+  }
+  
+  .app-subtitle {
+    font-size: 1rem;
+  }
+  
+  .splash-loading {
+    width: 150px;
+  }
+  
+  .floating-icon {
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .logo-icon-splash {
+    width: 80px;
+    height: 80px;
+    border-radius: 20px;
+  }
+  
+  .logo-icon-splash i {
+    font-size: 2.2rem;
+  }
+  
+  .pulse-ring {
+    width: 80px;
+    height: 80px;
+    border-radius: 20px;
+  }
+  
+  .app-title {
+    font-size: 1.8rem;
+  }
+  
+  .app-subtitle {
+    font-size: 0.9rem;
+  }
+  
+  .splash-loading {
+    width: 120px;
+  }
+}
+
+/* Landscape mobile */
+@media (max-height: 500px) and (orientation: landscape) {
+  .splash-content {
+    transform: scale(0.8);
+  }
+  
+  .version-info {
+    bottom: 1rem;
+  }
+}
+
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+  .splash-screen {
+    background: linear-gradient(135deg, #1a202c 0%, #2d3748 50%, #4a5568 100%);
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .splash-logo,
+  .floating-icon,
+  .gradient-orb,
+  .pulse-ring {
+    animation: none !important;
+  }
+  
+  .splash-logo {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+/* High contrast support */
+@media (prefers-contrast: high) {
+  .logo-icon-splash {
+    background: rgba(0, 0, 0, 0.8);
+    border: 3px solid white;
+  }
+  
+  .app-title {
+    color: white;
+    -webkit-text-fill-color: white;
+  }
+  
+  .loading-bar {
+    background: white;
+  }
+}

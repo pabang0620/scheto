@@ -1,0 +1,269 @@
+/* Register.css - Mobile-first responsive design with simplified colors */
+
+.register-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-background);
+  padding: var(--spacing-md);
+  position: relative;
+}
+
+.register-card {
+  background-color: var(--color-background-card);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--color-border);
+  padding: var(--spacing-xl);
+  width: 100%;
+  max-width: 550px;
+  margin: 0 auto;
+  max-height: 90vh;
+  overflow-y: auto;
+  transition: box-shadow var(--animation-normal) ease;
+}
+
+.register-header {
+  text-align: center;
+  margin-bottom: var(--spacing-xl);
+}
+
+.register-header h2 {
+  color: var(--color-text-primary);
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin-bottom: var(--spacing-sm);
+}
+
+.register-header p {
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.register-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  color: var(--color-text-primary);
+  font-weight: 500;
+  margin-bottom: var(--spacing-sm);
+  font-size: 0.9rem;
+}
+
+.form-group input,
+.form-group select {
+  min-height: var(--touch-target-min);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-md);
+  font-size: 1rem;
+  background-color: var(--color-background-card);
+  transition: border-color var(--animation-normal) ease, box-shadow var(--animation-normal) ease;
+  box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.form-group input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.form-group select {
+  cursor: pointer;
+}
+
+.register-button {
+  background-color: var(--color-primary);
+  color: var(--color-text-inverse);
+  border: none;
+  min-height: var(--touch-target-min);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-radius: var(--border-radius-md);
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--animation-normal) ease;
+  margin-top: var(--spacing-sm);
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.register-button:hover:not(:disabled) {
+  background-color: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+
+.register-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.field-error {
+  color: #dc2626;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+  display: block;
+}
+
+.error-message {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--color-error);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  font-size: 0.9rem;
+  text-align: center;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  margin-bottom: var(--spacing-lg);
+}
+
+.form-group input.error,
+.form-group select.error {
+  border-color: #dc2626;
+}
+
+.form-group input.error:focus,
+.form-group select.error:focus {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+.success-message {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: var(--color-success);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  font-size: 0.9rem;
+  text-align: center;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.register-footer {
+  text-align: center;
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--color-border);
+}
+
+.register-footer p {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: underline;
+  margin-left: var(--spacing-xs);
+  transition: color var(--animation-fast) ease;
+}
+
+.link-button:hover {
+  color: #1d4ed8;
+}
+
+/* Mobile-first enhancements - Full screen on small devices */
+@media (max-width: 640px) {
+  .register-container {
+    padding: 0;
+    align-items: stretch;
+  }
+  
+  .register-card {
+    border-radius: 0;
+    border: none;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    max-width: none;
+    margin: 0;
+    box-shadow: none;
+    max-height: none;
+    overflow-y: visible;
+  }
+  
+  .register-form {
+    gap: var(--spacing-xl);
+  }
+  
+  .form-group input,
+  .form-group select {
+    min-height: 48px; /* Larger touch targets on mobile */
+  }
+  
+  .register-button {
+    min-height: 48px;
+  }
+}
+
+/* Tablet and larger screens */
+@media (min-width: 641px) {
+  .register-container {
+    padding: var(--spacing-xl);
+  }
+  
+  .register-card {
+    padding: var(--spacing-2xl);
+    box-shadow: var(--shadow-xl);
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  
+  .register-header h2 {
+    font-size: 2rem;
+  }
+  
+  .register-header p {
+    font-size: 1rem;
+  }
+  
+  .register-form {
+    gap: var(--spacing-lg);
+  }
+}
+
+/* Desktop screens */
+@media (min-width: 1024px) {
+  .register-card {
+    max-width: 600px;
+    padding: 3rem;
+  }
+  
+  .register-card:hover {
+    box-shadow: var(--shadow-xl);
+    transform: translateY(-2px);
+  }
+}
+
+/* Focus states for accessibility */
+.form-group input:focus-visible,
+.form-group select:focus-visible,
+.register-button:focus-visible,
+.link-button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
