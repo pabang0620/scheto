@@ -12,13 +12,7 @@ const AddScheduleModal = ({ isOpen, onClose, onSubmit, selectedDate, editingSche
     startTime: '09:00',
     endTime: '18:00',
     shiftType: 'morning',
-    notes: '',
-    repeat: {
-      enabled: false,
-      type: 'weekly', // weekly, daily, monthly
-      endDate: '',
-      daysOfWeek: [] // for weekly repeat
-    }
+    notes: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -33,13 +27,7 @@ const AddScheduleModal = ({ isOpen, onClose, onSubmit, selectedDate, editingSche
           startTime: editingSchedule.startTime,
           endTime: editingSchedule.endTime,
           shiftType: editingSchedule.shiftType || 'morning',
-          notes: editingSchedule.notes || '',
-          repeat: {
-            enabled: false,
-            type: 'weekly',
-            endDate: '',
-            daysOfWeek: []
-          }
+          notes: editingSchedule.notes || ''
         });
       } else if (selectedDate) {
         setFormData(prev => ({
@@ -68,27 +56,6 @@ const AddScheduleModal = ({ isOpen, onClose, onSubmit, selectedDate, editingSche
     }));
   };
 
-  const handleRepeatChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      repeat: {
-        ...prev.repeat,
-        [field]: value
-      }
-    }));
-  };
-
-  const handleDayToggle = (day) => {
-    setFormData(prev => ({
-      ...prev,
-      repeat: {
-        ...prev.repeat,
-        daysOfWeek: prev.repeat.daysOfWeek.includes(day)
-          ? prev.repeat.daysOfWeek.filter(d => d !== day)
-          : [...prev.repeat.daysOfWeek, day]
-      }
-    }));
-  };
 
   const getShiftTimes = (shiftType) => {
     switch (shiftType) {
@@ -128,10 +95,6 @@ const AddScheduleModal = ({ isOpen, onClose, onSubmit, selectedDate, editingSche
       setError(t('schedule.selectTime'));
       return false;
     }
-    if (formData.repeat.enabled && formData.repeat.type === 'weekly' && formData.repeat.daysOfWeek.length === 0) {
-      setError(t('schedule.selectRepeatDays'));
-      return false;
-    }
     return true;
   };
 
@@ -159,13 +122,7 @@ const AddScheduleModal = ({ isOpen, onClose, onSubmit, selectedDate, editingSche
       startTime: '09:00',
       endTime: '18:00',
       shiftType: 'morning',
-      notes: '',
-      repeat: {
-        enabled: false,
-        type: 'weekly',
-        endDate: '',
-        daysOfWeek: []
-      }
+      notes: ''
     });
     setError('');
     onClose();
@@ -173,15 +130,6 @@ const AddScheduleModal = ({ isOpen, onClose, onSubmit, selectedDate, editingSche
 
   if (!isOpen) return null;
 
-  const daysOfWeek = [
-    { value: 0, label: t('schedule.sunday') },
-    { value: 1, label: t('schedule.monday') },
-    { value: 2, label: t('schedule.tuesday') },
-    { value: 3, label: t('schedule.wednesday') },
-    { value: 4, label: t('schedule.thursday') },
-    { value: 5, label: t('schedule.friday') },
-    { value: 6, label: t('schedule.saturday') }
-  ];
 
   return (
     <div className="modal-overlay" onClick={handleClose}>
@@ -196,10 +144,11 @@ const AddScheduleModal = ({ isOpen, onClose, onSubmit, selectedDate, editingSche
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="schedule-form">
-          {error && <div className="error-message">{error}</div>}
+        <div className="schedule-form">
+          <form onSubmit={handleSubmit}>
+            {error && <div className="error-message">{error}</div>}
 
-          <div className="form-section">
+            <div className="form-section">
             <div className="form-group">
               <label htmlFor="employeeId">
                 <i className="fas fa-user"></i>
@@ -224,7 +173,7 @@ const AddScheduleModal = ({ isOpen, onClose, onSubmit, selectedDate, editingSche
             <div className="form-group">
               <label htmlFor="date">
                 <i className="fas fa-calendar"></i>
-                {t('schedule.date')} *
+                날짜 선택 *
               </label>
               <input
                 type="date"
@@ -243,15 +192,26 @@ const AddScheduleModal = ({ isOpen, onClose, onSubmit, selectedDate, editingSche
               {t('schedule.shiftType')}
             </label>
             <div className="shift-type-buttons">
-              {['morning', 'afternoon', 'evening', 'night'].map(shift => (
+              {[
+                { type: 'morning', label: '오전', icon: 'sun' },
+                { type: 'afternoon', label: '오후', icon: 'cloud-sun' },
+                { type: 'evening', label: '저녁', icon: 'cloud-moon' },
+                { type: 'night', label: '야간', icon: 'moon' }
+              ].map(shift => (
                 <button
-                  key={shift}
+                  key={shift.type}
                   type="button"
-                  className={`shift-type-btn ${formData.shiftType === shift ? 'active' : ''} ${shift}`}
-                  onClick={() => handleShiftTypeChange(shift)}
+                  className={`shift-type-btn ${formData.shiftType === shift.type ? 'active' : ''} ${shift.type}`}
+                  onClick={() => handleShiftTypeChange(shift.type)}
                 >
-                  <i className={`fas fa-${shift === 'morning' ? 'sun' : shift === 'afternoon' ? 'cloud-sun' : shift === 'evening' ? 'cloud-moon' : 'moon'}`}></i>
-                  {t(`schedule.${shift}`)}
+                  <i className={`fas fa-${shift.icon}`}></i>
+                  {shift.label}
+                  <span style={{fontSize: '11px', opacity: 0.7}}>
+                    {shift.type === 'morning' && '06:00-14:00'}
+                    {shift.type === 'afternoon' && '14:00-22:00'}
+                    {shift.type === 'evening' && '18:00-02:00'}
+                    {shift.type === 'night' && '22:00-06:00'}
+                  </span>
                 </button>
               ))}
             </div>
@@ -291,69 +251,6 @@ const AddScheduleModal = ({ isOpen, onClose, onSubmit, selectedDate, editingSche
             </div>
           </div>
 
-          <div className="form-section">
-            <div className="repeat-section">
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={formData.repeat.enabled}
-                  onChange={(e) => handleRepeatChange('enabled', e.target.checked)}
-                />
-                <span className="checkmark"></span>
-                <span>
-                  <i className="fas fa-redo"></i>
-                  {t('schedule.repeatSchedule')}
-                </span>
-              </label>
-
-              {formData.repeat.enabled && (
-                <div className="repeat-options">
-                  <div className="form-group">
-                    <label>{t('schedule.repeatType')}</label>
-                    <select
-                      value={formData.repeat.type}
-                      onChange={(e) => handleRepeatChange('type', e.target.value)}
-                    >
-                      <option value="daily">{t('schedule.daily')}</option>
-                      <option value="weekly">{t('schedule.weekly')}</option>
-                      <option value="monthly">{t('schedule.monthly')}</option>
-                    </select>
-                  </div>
-
-                  {formData.repeat.type === 'weekly' && (
-                    <div className="form-group">
-                      <label>{t('schedule.repeatDays')}</label>
-                      <div className="days-selector">
-                        {daysOfWeek.map(day => (
-                          <button
-                            key={day.value}
-                            type="button"
-                            className={`day-btn ${formData.repeat.daysOfWeek.includes(day.value) ? 'active' : ''}`}
-                            onClick={() => handleDayToggle(day.value)}
-                          >
-                            {day.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="form-group">
-                    <label htmlFor="repeatEndDate">
-                      {t('schedule.repeatUntil')}
-                    </label>
-                    <input
-                      type="date"
-                      id="repeatEndDate"
-                      value={formData.repeat.endDate}
-                      onChange={(e) => handleRepeatChange('endDate', e.target.value)}
-                      min={formData.date}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
 
           <div className="form-section">
             <div className="form-group">
@@ -371,27 +268,29 @@ const AddScheduleModal = ({ isOpen, onClose, onSubmit, selectedDate, editingSche
               />
             </div>
           </div>
+          </form>
+        </div>
 
-          <div className="modal-actions">
-            <button
-              type="button"
-              className="cancel-btn"
-              onClick={handleClose}
-              disabled={loading}
-            >
-              <i className="fas fa-times"></i>
-              {t('common.cancel')}
-            </button>
-            <button
-              type="submit"
-              className="submit-btn"
-              disabled={loading}
-            >
-              <i className="fas fa-check"></i>
-              {loading ? t('common.saving') : t('common.save')}
-            </button>
-          </div>
-        </form>
+        <div className="modal-actions">
+          <button
+            type="button"
+            className="cancel-btn"
+            onClick={handleClose}
+            disabled={loading}
+          >
+            <i className="fas fa-times"></i>
+            {t('common.cancel')}
+          </button>
+          <button
+            type="button"
+            className="submit-btn"
+            onClick={handleSubmit}
+            disabled={loading}
+          >
+            <i className="fas fa-check"></i>
+            {loading ? t('common.saving') : t('common.save')}
+          </button>
+        </div>
       </div>
     </div>
   );

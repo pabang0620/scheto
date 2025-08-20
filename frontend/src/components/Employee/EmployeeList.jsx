@@ -21,7 +21,7 @@ const EmployeeList = () => {
   const [employeeToDelete, setEmployeeToDelete] = useState(null);
   const [showActionSheet, setShowActionSheet] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [viewMode, setViewMode] = useState('card'); // 'card' or 'list'
+  const [viewMode, setViewMode] = useState('list'); // Only list view
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [employeeAbilities, setEmployeeAbilities] = useState({});
   const [abilitiesLoading, setAbilitiesLoading] = useState(false);
@@ -412,21 +412,6 @@ const EmployeeList = () => {
           </div>
           
           <div className="view-controls">
-            <div className="view-toggle-group">
-              <button
-                className={`view-btn ${viewMode === 'card' ? 'active' : ''}`}
-                onClick={() => setViewMode('card')}
-              >
-                <i className="fas fa-th"></i>
-              </button>
-              <button
-                className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
-                onClick={() => setViewMode('list')}
-              >
-                <i className="fas fa-list"></i>
-              </button>
-            </div>
-            
             <button
               className="add-employee-btn"
               onClick={() => navigate('/employees/new')}
@@ -468,8 +453,8 @@ const EmployeeList = () => {
               <span>{t('employee.addEmployee')}</span>
             </button>
           </div>
-        ) : viewMode === 'list' ? (
-          // Table View
+        ) : (
+          // Table View Only
           <div className="employee-table-view">
             <table className="employee-table">
               <thead>
@@ -525,70 +510,6 @@ const EmployeeList = () => {
                 ))}
               </tbody>
             </table>
-          </div>
-        ) : (
-          // Card View
-          <div className="employee-grid">
-            {filteredEmployees.map((employee) => {
-              const rank = getEmployeeRank(employee.id);
-              const role = employee.user?.role || employee.role || 'employee';
-              
-              return (
-                <div
-                  key={employee.id}
-                  className="employee-card"
-                  onClick={() => handleEmployeePress(employee)}
-                >
-                  {rank && (
-                    <div className={`rank-display rank-${rank.toLowerCase()}`}>
-                      {rank}
-                    </div>
-                  )}
-                  
-                  <div className="card-top">
-                    <div className="employee-avatar">
-                      {employee.name?.charAt(0)?.toUpperCase() || '?'}
-                    </div>
-                    <div className="employee-basic-info">
-                      <h3 className="employee-name">
-                        {employee.name}
-                      </h3>
-                      <p className="employee-role">
-                        <span className={`role-badge role-${role.toLowerCase()}`}>
-                          {role.toUpperCase()}
-                        </span>
-                        {employee.department && (
-                          <span className="employee-department">{employee.department}</span>
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="card-details">
-                    <div className="detail-item">
-                      <i className="fas fa-building"></i>
-                      <span>{employee.department || '부서 없음'}</span>
-                    </div>
-                    <div className="detail-item">
-                      <i className="fas fa-envelope"></i>
-                      <span>{employee.email}</span>
-                    </div>
-                    {employee.phone && (
-                      <div className="detail-item">
-                        <i className="fas fa-phone"></i>
-                        <span>{employee.phone}</span>
-                      </div>
-                    )}
-                    {employee.position && (
-                      <div className="detail-item">
-                        <i className="fas fa-user-tie"></i>
-                        <span>{employee.position}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
           </div>
         )}
       </div>

@@ -112,35 +112,39 @@
   border: 1px solid #bbf7d0;
 }
 
-/* Modal Styles */
-.modal-overlay {
+/* Leave Request Modal Styles */
+.leave-request-container .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 9999;
   padding: 1rem;
 }
 
-.modal-content {
+.leave-request-container .modal-content {
   background: white;
   border-radius: 12px;
   width: 100%;
   max-width: 600px;
   max-height: 90vh;
   overflow-y: auto;
+  position: relative;
+  z-index: 10000;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
 
-.form-modal {
+.leave-request-container .form-modal {
   padding: 0;
 }
 
-.modal-header {
+.leave-request-container .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -149,17 +153,17 @@
   position: sticky;
   top: 0;
   background: white;
-  z-index: 1;
+  z-index: 10001;
 }
 
-.modal-header h3 {
+.leave-request-container .modal-header h3 {
   color: #1f2937;
   font-size: 1.25rem;
   font-weight: 600;
   margin: 0;
 }
 
-.modal-close {
+.leave-request-container .modal-close {
   background: none;
   border: none;
   font-size: 1.5rem;
@@ -174,7 +178,7 @@
   transition: all 0.2s ease;
 }
 
-.modal-close:hover {
+.leave-request-container .modal-close:hover {
   background: #f3f4f6;
   color: #374151;
 }

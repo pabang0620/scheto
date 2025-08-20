@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,157 +8,142 @@ datasource db {
 }
 
 model User {
-  id        Int       @id @default(autoincrement())
-  email     String    @unique
-  name      String    // User's name
-  password  String    // Plain text password as requested
-  role      String    @default("employee") // employee, manager, admin
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  
-  // Relations
-  employee  Employee?
-  company   Company?
-  reviewedLeaves Leave[] @relation("reviewer")
-  createdNotices Notice[] @relation("NoticeCreator")
+  id             Int          @id @default(autoincrement())
+  email          String       @unique
+  name           String
+  password       String
+  role           String       @default("employee")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  company        Company?
+  employee       Employee?
+  reviewedLeaves Leave[]      @relation("reviewer")
   readNotices    NoticeRead[]
-  
+  createdNotices Notice[]     @relation("NoticeCreator")
+
   @@map("users")
 }
 
 model Company {
-  id           Int      @id @default(autoincrement())
-  userId       Int      @unique
-  companyName  String
-  industry     String   // healthcare, restaurant, military, retail, etc.
-  companySize  String   // small(1-50), medium(51-200), large(201-500), enterprise(500+)
-  address      String?
-  phone        String?
-  workType     String   @default("flexible") // fixed, flexible, shift
-  workDays     Json?    // ["mon", "tue", "wed", "thu", "fri"] for fixed type
-  defaultStartTime String? @default("09:00") // Default work start time
-  defaultEndTime   String? @default("18:00") // Default work end time
-  showLeaveInSchedule Boolean @default(false) // Show leave employees in schedule
-  minStaffRequired Int?    // Minimum staff required per day
-  // Enhanced fields for auto-generation
-  timezone     String   @default("UTC") // Company timezone
-  operatingHours Json?  // Operating hours by day of week
-  peakHours    Json?    // Peak hours requiring more staff
-  holidaySchedule Json? // Holiday scheduling preferences  
-  autoSchedulingEnabled Boolean @default(false) // Enable auto-scheduling
-  scheduleNotificationDays Int @default(7) // Days in advance to notify about schedules
-  allowEmployeeSelfScheduling Boolean @default(false) // Allow employees to pick shifts
-  maxAdvanceScheduleDays Int @default(30) // Max days to schedule in advance
-  minimumStaffCoverage Float @default(1.0) // Minimum coverage ratio
-  overtimePolicy Json?   // Overtime rules and policies
-  unionRules     Json?   // Union-specific scheduling rules
-  complianceRequirements Json? // Legal compliance requirements
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  id                          Int            @id @default(autoincrement())
+  userId                      Int            @unique
+  companyName                 String
+  industry                    String
+  companySize                 String
+  address                     String?
+  phone                       String?
+  createdAt                   DateTime       @default(now())
+  defaultEndTime              String?        @default("18:00")
+  defaultStartTime            String?        @default("09:00")
+  minStaffRequired            Int?
+  showLeaveInSchedule         Boolean        @default(false)
+  updatedAt                   DateTime       @updatedAt
+  workDays                    Json?
+  workType                    String         @default("flexible")
+  allowEmployeeSelfScheduling Boolean        @default(false)
+  autoSchedulingEnabled       Boolean        @default(false)
+  complianceRequirements      Json?
+  holidaySchedule             Json?
+  maxAdvanceScheduleDays      Int            @default(30)
+  minimumStaffCoverage        Float          @default(1)
+  operatingHours              Json?
+  overtimePolicy              Json?
+  peakHours                   Json?
+  scheduleNotificationDays    Int            @default(7)
+  timezone                    String         @default("UTC")
+  unionRules                  Json?
+  user                        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shiftPatterns               ShiftPattern[]
+
   @@map("companies")
 }
 
 model Employee {
-  id         Int      @id @default(autoincrement())
-  userId     Int      @unique
-  name       String
-  email      String   @unique
-  department String
-  position   String
-  phone      String?
-  address    String?
-  hireDate   DateTime @default(now())
-  // Enhanced fields for schedule auto-generation
-  weeklyHoursTarget  Int    @default(40)  // Target weekly hours
-  maxDailyHours      Int    @default(8)   // Maximum daily hours
-  minDailyHours      Int    @default(4)   // Minimum daily hours
-  maxConsecutiveDays Int    @default(5)   // Max consecutive work days
-  minRestHours       Int    @default(12)  // Minimum rest hours between shifts
-  isActive           Boolean @default(true) // Active for scheduling
-  employeeType       String  @default("full-time") // full-time, part-time, contract
-  seniorityLevel     String  @default("junior") // junior, intermediate, senior, lead
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  
-  // Relations
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  abilities   Ability[]
-  preferences Preference[]
-  schedules   Schedule[]
-  leaves      Leave[]
-  notes       EmployeeNote[]
-  chemistry1  EmployeeChemistry[] @relation("Employee1Chemistry")
-  chemistry2  EmployeeChemistry[] @relation("Employee2Chemistry")
-  constraints EmployeeConstraints?
-  certifications EmployeeCertification[]
-  
+  id                 Int                     @id @default(autoincrement())
+  userId             Int                     @unique
+  name               String
+  email              String                  @unique
+  department         String
+  position           String
+  phone              String?
+  address            String?
+  hireDate           DateTime                @default(now())
+  yearsOfExperience  Int                     @default(0)
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+  employeeType       String                  @default("full-time")
+  isActive           Boolean                 @default(true)
+  maxConsecutiveDays Int                     @default(5)
+  maxDailyHours      Int                     @default(8)
+  minDailyHours      Int                     @default(4)
+  minRestHours       Int                     @default(12)
+  seniorityLevel     String                  @default("junior")
+  weeklyHoursTarget  Int                     @default(40)
+  abilities          Ability?
+  certifications     EmployeeCertification[]
+  chemistry1         EmployeeChemistry[]     @relation("Employee1Chemistry")
+  chemistry2         EmployeeChemistry[]     @relation("Employee2Chemistry")
+  constraints        EmployeeConstraints?
+  notes              EmployeeNote[]
+  user               User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  leaves             Leave[]
+  preferences        Preference?
+  schedules          Schedule[]
+
   @@map("employees")
 }
 
 model Ability {
-  id             Int  @id @default(autoincrement())
-  employeeId     Int
-  experience     Int  @default(1) // 1-5 연차
-  workSkill      Int  @default(1) // 1-5 업무 능력
-  teamChemistry  Int  @default(1) // 1-5 사내 친밀도
-  customerService Int @default(1) // 1-5 고객 응대
-  flexibility    Int  @default(1) // 1-5 근무 유연성
-  totalScore     Int? // 합산 점수
-  rank           String? // S, A, B, C, D
-  
-  // Relations
-  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  
-  @@unique([employeeId]) // One ability record per employee
+  id              Int      @id @default(autoincrement())
+  employeeId      Int      @unique
+  customerService Int      @default(1)
+  experience      Int      @default(1)
+  flexibility     Int      @default(1)
+  rank            String?
+  teamChemistry   Int      @default(1)
+  totalScore      Int?
+  workSkill       Int      @default(1)
+  employee        Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
   @@map("abilities")
 }
 
 model Preference {
-  id           Int    @id @default(autoincrement())
-  employeeId   Int
-  preferDays   Json   // Array of preferred days ["monday", "tuesday", etc.]
-  avoidDays    Json   // Array of days to avoid
-  fixedOffDays Json   // Array of fixed off days
-  
-  // Relations
-  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  
-  @@unique([employeeId]) // One preference record per employee
+  id           Int      @id @default(autoincrement())
+  employeeId   Int      @unique
+  preferDays   Json
+  avoidDays    Json
+  fixedOffDays Json
+  employee     Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
   @@map("preferences")
 }
 
 model Schedule {
-  id         Int      @id @default(autoincrement())
-  employeeId Int
-  date       DateTime @db.Date
-  startTime  String   // HH:MM format
-  endTime    String   // HH:MM format
-  shiftType  String   @default("regular") // morning, afternoon, evening, night, regular
-  notes      String?  @db.Text
-  status     String   @default("scheduled") // scheduled, completed, cancelled
-  // Enhanced fields for auto-generation
-  shiftPatternId Int?  // Reference to shift pattern used
-  generationLogId Int? // Reference to generation log that created this schedule
-  isAutoGenerated Boolean @default(false) // Was this schedule auto-generated
-  priority    String  @default("normal") // high, normal, low - for conflict resolution
-  estimatedWorkload String? // light, moderate, heavy - for workload balancing
-  breakTime   String? // HH:MM format - scheduled break time
-  overtimeApproved Boolean @default(false) // Is overtime pre-approved
-  swapRequested Boolean @default(false) // Has employee requested a swap
-  createdBy  Int?
-  updatedBy  Int?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  
-  // Relations
-  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  shiftPattern ShiftPattern? @relation("ShiftPatternSchedules", fields: [shiftPatternId], references: [id], onDelete: SetNull)
-  generationLog GenerationLog? @relation("GeneratedSchedules", fields: [generationLogId], references: [id], onDelete: SetNull)
-  
+  id                Int            @id @default(autoincrement())
+  employeeId        Int
+  date              DateTime       @db.Date
+  startTime         String
+  endTime           String
+  shiftType         String         @default("regular")
+  notes             String?        @db.Text
+  status            String         @default("scheduled")
+  createdBy         Int?
+  updatedBy         Int?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  breakTime         String?
+  estimatedWorkload String?
+  generationLogId   Int?
+  isAutoGenerated   Boolean        @default(false)
+  overtimeApproved  Boolean        @default(false)
+  priority          String         @default("normal")
+  shiftPatternId    Int?
+  swapRequested     Boolean        @default(false)
+  employee          Employee       @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  generationLog     GenerationLog? @relation("GeneratedSchedules", fields: [generationLogId], references: [id])
+  shiftPattern      ShiftPattern?  @relation("ShiftPatternSchedules", fields: [shiftPatternId], references: [id])
+
   @@index([date, employeeId])
   @@index([employeeId, date, startTime])
   @@index([shiftPatternId])
@@ -171,75 +153,72 @@ model Schedule {
 }
 
 model Leave {
-  id           Int      @id @default(autoincrement())
+  id           Int       @id @default(autoincrement())
   employeeId   Int
-  startDate    DateTime @db.Date
-  endDate      DateTime @db.Date
-  type         String   // vacation, sick, personal, etc.
+  startDate    DateTime  @db.Date
+  endDate      DateTime  @db.Date
+  type         String
   reason       String?
-  status       String   @default("pending") // pending, approved, rejected
-  adminComment String?  // 관리자 코멘트
-  reviewedAt   DateTime? // 검토 날짜
-  reviewedBy   Int?     // 검토한 관리자 ID
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  
-  // Relations
-  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  reviewer User?    @relation("reviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
-  
+  status       String    @default("pending")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  adminComment String?
+  reviewedAt   DateTime?
+  reviewedBy   Int?
+  employee     Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  reviewer     User?     @relation("reviewer", fields: [reviewedBy], references: [id])
+
+  @@index([employeeId], map: "leaves_employeeId_fkey")
+  @@index([reviewedBy], map: "leaves_reviewedBy_fkey")
   @@map("leaves")
 }
 
 model EmployeeNote {
   id         Int      @id @default(autoincrement())
   employeeId Int
-  type       String   // 'praise', 'caution', 'general'
+  type       String
   content    String   @db.Text
-  priority   String   // 'high', 'medium', 'low'
+  priority   String
   createdBy  Int
   createdAt  DateTime @default(now())
-  
-  // Relations
-  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId], map: "employee_notes_employeeId_fkey")
   @@map("employee_notes")
 }
 
 model EmployeeChemistry {
-  id          Int @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   employee1Id Int
   employee2Id Int
-  score       Int @default(3) // 1-5 궁합 점수
-  
-  // Relations
-  employee1 Employee @relation("Employee1Chemistry", fields: [employee1Id], references: [id], onDelete: Cascade)
-  employee2 Employee @relation("Employee2Chemistry", fields: [employee2Id], references: [id], onDelete: Cascade)
-  
+  score       Int      @default(3)
+  employee1   Employee @relation("Employee1Chemistry", fields: [employee1Id], references: [id], onDelete: Cascade)
+  employee2   Employee @relation("Employee2Chemistry", fields: [employee2Id], references: [id], onDelete: Cascade)
+
   @@unique([employee1Id, employee2Id])
+  @@index([employee2Id], map: "employee_chemistry_employee2Id_fkey")
   @@map("employee_chemistry")
 }
 
 model Notice {
-  id         Int      @id @default(autoincrement())
-  title      String
-  content    String   @db.Text
-  type       String   // 'general', 'policy', 'schedule', 'emergency'
-  priority   String   // 'low', 'medium', 'high', 'critical'
-  isPinned   Boolean  @default(false)
-  createdBy  Int
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  expiresAt  DateTime?
-  
-  // Relations
-  creator    User         @relation("NoticeCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+  id          Int          @id @default(autoincrement())
+  title       String
+  content     String       @db.Text
+  type        String
+  priority    String
+  isPinned    Boolean      @default(false)
+  createdBy   Int
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  expiresAt   DateTime?
   readByUsers NoticeRead[]
-  
+  creator     User         @relation("NoticeCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+
   @@index([createdAt])
   @@index([type])
   @@index([priority])
   @@index([isPinned])
+  @@index([createdBy], map: "notices_createdBy_fkey")
   @@map("notices")
 }
 
@@ -248,70 +227,64 @@ model NoticeRead {
   noticeId Int
   userId   Int
   readAt   DateTime @default(now())
-  
-  // Relations
-  notice   Notice @relation(fields: [noticeId], references: [id], onDelete: Cascade)
-  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  notice   Notice   @relation(fields: [noticeId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([noticeId, userId])
   @@index([userId])
   @@map("notice_reads")
 }
 
-// Enhanced models for schedule auto-generation
-
 model ShiftPattern {
-  id          Int      @id @default(autoincrement())
-  name        String   // e.g., "Morning Shift", "Night Shift", "Rotating Pattern"
-  description String?  @db.Text
-  startTime   String   // HH:MM format
-  endTime     String   // HH:MM format  
-  duration    Int      // Duration in minutes
-  breakDuration Int    @default(0) // Break time in minutes
-  shiftType   String   // morning, afternoon, evening, night, rotating
-  industryType String? // healthcare, restaurant, retail, etc.
-  isTemplate  Boolean  @default(false) // Is this a reusable template
-  color       String   @default("#007bff") // Display color for UI
-  minStaffRequired Int @default(1) // Minimum staff required for this shift
-  maxStaffRequired Int? // Maximum staff allowed for this shift
-  requiredSkillLevel String @default("junior") // Required skill level
-  allowedDepartments Json? // Array of departments that can work this shift
-  createdBy   Int
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  // Relations
-  schedules   Schedule[] @relation("ShiftPatternSchedules")
-  templates   ScheduleTemplate[] @relation("TemplateShiftPatterns")
-  
+  id                 Int                @id @default(autoincrement())
+  name               String
+  description        String?            @db.Text
+  startTime          String
+  endTime            String
+  duration           Int
+  breakDuration      Int                @default(0)
+  shiftType          String
+  industryType       String?
+  isTemplate         Boolean            @default(false)
+  color              String             @default("#007bff")
+  createdBy          Int
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  companyId          Int?
+  days               Json
+  enabled            Boolean            @default(true)
+  requiredStaff      Int                @default(1)
+  requirements       Json?
+  schedules          Schedule[]         @relation("ShiftPatternSchedules")
+  company            Company?           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  schedule_templates ScheduleTemplate[] @relation("templateshiftpatterns")
+
   @@index([shiftType])
   @@index([industryType])
   @@index([isTemplate])
+  @@index([companyId], map: "shift_patterns_companyId_fkey")
   @@map("shift_patterns")
 }
 
 model ScheduleTemplate {
-  id           Int      @id @default(autoincrement())
-  name         String   // e.g., "Hospital 24/7", "Restaurant Peak Hours", "Office Standard"
-  description  String?  @db.Text
-  industryType String   // healthcare, restaurant, retail, manufacturing, etc.
-  templateType String   // weekly, daily, monthly, rotating
-  isActive     Boolean  @default(true)
-  metadata     Json?    // Template-specific configuration
-  // Template rules and patterns
-  workDaysPattern Json  // e.g., ["mon", "tue", "wed", "thu", "fri"]
-  rotationPeriod  Int?  @default(7) // Days in rotation cycle
-  minStaffPerShift Int  @default(1) // Minimum staff required per shift
-  maxStaffPerShift Int? // Maximum staff per shift
-  coverageRequirements Json? // Detailed coverage requirements
-  createdBy    Int
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  
-  // Relations
-  shiftPatterns ShiftPattern[] @relation("TemplateShiftPatterns")
-  generationLogs GenerationLog[]
-  
+  id                   Int             @id @default(autoincrement())
+  name                 String
+  description          String?         @db.Text
+  industryType         String
+  templateType         String
+  isActive             Boolean         @default(true)
+  metadata             Json?
+  workDaysPattern      Json
+  rotationPeriod       Int?            @default(7)
+  minStaffPerShift     Int             @default(1)
+  maxStaffPerShift     Int?
+  coverageRequirements Json?
+  createdBy            Int
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  generationLogs       GenerationLog[]
+  shift_patterns       ShiftPattern[]  @relation("templateshiftpatterns")
+
   @@index([industryType])
   @@index([templateType])
   @@index([isActive])
@@ -321,92 +294,79 @@ model ScheduleTemplate {
 model EmployeeConstraints {
   id                    Int      @id @default(autoincrement())
   employeeId            Int      @unique
-  // Time-based constraints
-  unavailableTimeSlots  Json?    // Array of time slots employee can't work
-  preferredTimeSlots    Json?    // Array of preferred time slots
-  blackoutDates         Json?    // Specific dates employee can't work
-  // Shift preferences
-  preferredShiftTypes   Json?    // Array of preferred shift types
-  avoidShiftTypes       Json?    // Array of shift types to avoid
+  unavailableTimeSlots  Json?
+  preferredTimeSlots    Json?
+  blackoutDates         Json?
+  preferredShiftTypes   Json?
+  avoidShiftTypes       Json?
   canWorkWeekends       Boolean  @default(true)
   canWorkHolidays       Boolean  @default(true)
   canWorkNightShifts    Boolean  @default(true)
-  // Work pattern constraints
   maxShiftsPerWeek      Int      @default(5)
   maxOvertimeHours      Int      @default(10)
   requiresFixedSchedule Boolean  @default(false)
-  fixedShiftPattern     String?  // Reference to specific shift pattern
-  // Transportation and location
-  maxTravelTime         Int?     // Maximum travel time to workplace in minutes
-  workLocation          String?  // Preferred work location
+  fixedShiftPattern     String?
+  maxTravelTime         Int?
+  workLocation          String?
   hasReliableTransport  Boolean  @default(true)
-  // Special requirements
   needsAccommodation    Boolean  @default(false)
   accommodationDetails  String?  @db.Text
-  medicalRestrictions   Json?    // Array of medical restrictions
-  certificationRequired Json?    // Required certifications for certain shifts
+  medicalRestrictions   Json?
+  certificationRequired Json?
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
-  
-  // Relations
-  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  
+  employee              Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
   @@map("employee_constraints")
 }
 
 model GenerationLog {
-  id                   Int      @id @default(autoincrement())
-  templateId           Int?     // Reference to template used
-  generatedBy          Int      // User who initiated generation
-  generationType       String   // manual, automatic, template-based
-  periodStart          DateTime @db.Date // Start date of generated period
-  periodEnd            DateTime @db.Date // End date of generated period
-  totalSchedulesCreated Int     @default(0)
-  totalEmployeesAffected Int    @default(0)
-  // Generation parameters
-  parameters           Json     // Parameters used for generation
-  constraints          Json?    // Constraints applied during generation
-  // Results and statistics
-  coverageAchieved     Float?   // Percentage of required coverage achieved
-  employeeSatisfaction Float?   // Average employee satisfaction score
-  constraintViolations Json?    // List of constraint violations
-  warnings             Json?    // Warnings generated during process
-  errors               Json?    // Errors encountered during generation
-  // Generation metadata
-  executionTime        Int?     // Time taken to generate in milliseconds
-  algorithmVersion     String   @default("v1.0")
-  status              String    @default("completed") // pending, completed, failed, partial
-  notes               String?   @db.Text
-  createdAt           DateTime  @default(now())
-  
-  // Relations
-  template     ScheduleTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
-  schedules    Schedule[] @relation("GeneratedSchedules")
-  
+  id                     Int               @id @default(autoincrement())
+  templateId             Int?
+  generatedBy            Int
+  generationType         String
+  periodStart            DateTime          @db.Date
+  periodEnd              DateTime          @db.Date
+  totalSchedulesCreated  Int               @default(0)
+  totalEmployeesAffected Int               @default(0)
+  parameters             Json
+  constraints            Json?
+  coverageAchieved       Float?
+  employeeSatisfaction   Float?
+  constraintViolations   Json?
+  warnings               Json?
+  errors                 Json?
+  executionTime          Int?
+  algorithmVersion       String            @default("v1.0")
+  status                 String            @default("completed")
+  notes                  String?           @db.Text
+  createdAt              DateTime          @default(now())
+  template               ScheduleTemplate? @relation(fields: [templateId], references: [id])
+  schedules              Schedule[]        @relation("GeneratedSchedules")
+
   @@index([generatedBy])
   @@index([periodStart, periodEnd])
   @@index([status])
   @@index([createdAt])
+  @@index([templateId], map: "generation_logs_templateId_fkey")
   @@map("generation_logs")
 }
 
 model EmployeeCertification {
-  id               Int      @id @default(autoincrement())
-  employeeId       Int
-  certificationName String  // e.g., "CPR", "Food Safety", "Forklift Operation"
-  certificationBody String? // Issuing organization
-  issueDate        DateTime @db.Date
-  expiryDate       DateTime? @db.Date
-  certificateNumber String?
-  isActive         Boolean  @default(true)
-  verificationStatus String @default("pending") // pending, verified, expired
-  attachmentUrl    String? // URL to certificate document
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  
-  // Relations
-  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  
+  id                 Int       @id @default(autoincrement())
+  employeeId         Int
+  certificationName  String
+  certificationBody  String?
+  issueDate          DateTime  @db.Date
+  expiryDate         DateTime? @db.Date
+  certificateNumber  String?
+  isActive           Boolean   @default(true)
+  verificationStatus String    @default("pending")
+  attachmentUrl      String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  employee           Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
   @@index([employeeId])
   @@index([certificationName])
   @@index([expiryDate])

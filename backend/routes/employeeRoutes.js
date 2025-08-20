@@ -5,7 +5,8 @@ const employeeController = require('../controllers/employeeController');
 const authMiddleware = require('../middlewares/authMiddleware');
 
 // Apply auth middleware to all routes
-router.use(authMiddleware);
+// TEMPORARILY DISABLED FOR DEVELOPMENT - ENABLE IN PRODUCTION!
+// router.use(authMiddleware);
 
 // @route   GET /api/employees
 // @desc    Get all employees

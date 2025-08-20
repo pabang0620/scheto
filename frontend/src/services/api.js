@@ -212,6 +212,16 @@ export const notices = {
   getUnreadCount: () => api.get('/notices/unread-count'),
 };
 
+// Shift Patterns API endpoints
+export const shiftPatterns = {
+  getAll: (companyId) => api.get('/shift-patterns', { params: { companyId } }),
+  getById: (id) => api.get(`/shift-patterns/${id}`),
+  create: (data) => api.post('/shift-patterns', data),
+  update: (id, data) => api.put(`/shift-patterns/${id}`, data),
+  delete: (id) => api.delete(`/shift-patterns/${id}`),
+  bulkUpdate: (data) => api.put('/shift-patterns/bulk/update', data),
+};
+
 // Convenience functions that match the old API structure
 export const login = auth.login;
 export const register = auth.register;
@@ -252,6 +262,14 @@ export const getDashboardAlerts = dashboard.getAlerts;
 export const getNotices = notices.getAll;
 export const markNoticeAsRead = notices.markAsRead;
 export const getUnreadCount = notices.getUnreadCount;
+
+// Export shiftPatterns convenience functions
+export const getShiftPatterns = shiftPatterns.getAll;
+export const getShiftPattern = shiftPatterns.getById;
+export const createShiftPattern = shiftPatterns.create;
+export const updateShiftPattern = shiftPatterns.update;
+export const deleteShiftPattern = shiftPatterns.delete;
+export const bulkUpdateShiftPatterns = shiftPatterns.bulkUpdate;
 
 export const getScheduleTemplates = settings.getScheduleTemplates;
 

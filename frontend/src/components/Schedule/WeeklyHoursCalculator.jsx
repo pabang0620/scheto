@@ -10,6 +10,18 @@ const WeeklyHoursCalculator = ({
   allocatedHours 
 }) => {
   
+  // Helper function - Define before useMemo hooks
+  const calculateShiftHours = (start, end) => {
+    const startTime = new Date(`2000-01-01T${start}`);
+    const endTime = new Date(`2000-01-01T${end}`);
+    
+    if (endTime < startTime) {
+      endTime.setDate(endTime.getDate() + 1);
+    }
+    
+    return (endTime - startTime) / (1000 * 60 * 60);
+  };
+  
   // Calculate total employees available
   const totalEmployees = selectedEmployees.length;
   
@@ -57,17 +69,6 @@ const WeeklyHoursCalculator = ({
         };
       });
   }, [shiftPatterns, workDays, totalRequiredHours]);
-  
-  const calculateShiftHours = (start, end) => {
-    const startTime = new Date(`2000-01-01T${start}`);
-    const endTime = new Date(`2000-01-01T${end}`);
-    
-    if (endTime < startTime) {
-      endTime.setDate(endTime.getDate() + 1);
-    }
-    
-    return (endTime - startTime) / (1000 * 60 * 60);
-  };
   
   return (
     <div className="weekly-hours-calculator">

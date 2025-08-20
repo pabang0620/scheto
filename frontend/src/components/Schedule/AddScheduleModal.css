@@ -1,10 +1,31 @@
 /* Add Schedule Modal */
+.add-schedule-modal .modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+}
+
 .add-schedule-modal {
   width: 90%;
   max-width: 600px;
-  max-height: 90vh;
-  overflow-y: auto;
+  max-height: 85vh;
+  overflow: hidden;
   animation: slideUp 0.3s ease;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  position: relative;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
 }
 
 @keyframes slideUp {
@@ -18,28 +39,68 @@
   }
 }
 
+.modal-header {
+  padding: 24px 24px 16px;
+  border-bottom: 1px solid #f0f2f5;
+  position: relative;
+  background: white;
+  flex-shrink: 0;
+}
+
 .modal-header h2 {
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 700;
-  color: #191f28;
+  color: #1a1d23;
+  margin: 0;
 }
 
 .modal-header h2 i {
-  font-size: 18px;
-  color: #4667de;
+  font-size: 20px;
+  color: #3b5bdb;
+}
+
+.modal-close {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: #f1f3f5;
+  color: #868e96;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close:hover {
+  background: #e9ecef;
+  color: #495057;
+  transform: rotate(90deg);
 }
 
 .schedule-form {
-  padding: 20px;
+  background: white;
+  overflow-y: auto;
+  flex: 1;
+  max-height: calc(85vh - 140px); /* header와 action 버튼 높이 제외 */
+}
+
+.schedule-form form {
+  padding: 24px;
 }
 
 .form-section {
-  margin-bottom: 24px;
-  padding-bottom: 24px;
-  border-bottom: 1px solid #f0f2f5;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e9ecef;
+  background: white;
 }
 
 .form-section:last-of-type {
@@ -86,20 +147,22 @@
 .form-group select,
 .form-group textarea {
   width: 100%;
-  padding: 10px 14px;
-  border: 1px solid #e5e8eb;
+  padding: 12px 16px;
+  border: 2px solid #e9ecef;
   border-radius: 12px;
   font-size: 14px;
   background: white;
   transition: all 0.2s;
+  font-weight: 500;
 }
 
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #4667de;
-  box-shadow: 0 0 0 3px rgba(70, 103, 222, 0.1);
+  border-color: #3b5bdb;
+  background: white;
+  box-shadow: 0 0 0 4px rgba(59, 91, 219, 0.1);
 }
 
 .form-group textarea {
@@ -117,8 +180,8 @@
 
 .shift-type-btn {
   padding: 16px;
-  border: 2px solid #e5e8eb;
-  border-radius: 12px;
+  border: 2px solid #e9ecef;
+  border-radius: 14px;
   background: white;
   cursor: pointer;
   transition: all 0.2s;
@@ -126,6 +189,7 @@
   flex-direction: column;
   align-items: center;
   gap: 8px;
+  font-weight: 600;
 }
 
 .shift-type-btn i {
@@ -133,8 +197,10 @@
 }
 
 .shift-type-btn.active {
-  border-color: #4667de;
-  background: rgba(70, 103, 222, 0.05);
+  border-color: #3b5bdb;
+  background: rgba(59, 91, 219, 0.08);
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(59, 91, 219, 0.15);
 }
 
 .shift-type-btn.morning.active {
@@ -173,130 +239,16 @@
   gap: 16px;
 }
 
-/* Repeat Section */
-.repeat-section {
-  padding: 16px;
-  background: #f8f9fa;
-  border-radius: 12px;
-}
-
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  color: #191f28;
-  position: relative;
-  padding-left: 32px;
-}
-
-.checkbox-label input[type="checkbox"] {
-  position: absolute;
-  opacity: 0;
-  cursor: pointer;
-  height: 0;
-  width: 0;
-}
-
-.checkbox-label .checkmark {
-  position: absolute;
-  left: 0;
-  height: 20px;
-  width: 20px;
-  background-color: white;
-  border: 2px solid #e5e8eb;
-  border-radius: 6px;
-  transition: all 0.2s;
-}
-
-.checkbox-label:hover input ~ .checkmark {
-  border-color: #4667de;
-}
-
-.checkbox-label input:checked ~ .checkmark {
-  background-color: #4667de;
-  border-color: #4667de;
-}
-
-.checkbox-label .checkmark:after {
-  content: "";
-  position: absolute;
-  display: none;
-  left: 6px;
-  top: 2px;
-  width: 5px;
-  height: 10px;
-  border: solid white;
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
-}
-
-.checkbox-label input:checked ~ .checkmark:after {
-  display: block;
-}
-
-.checkbox-label span:last-child {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.checkbox-label span i {
-  font-size: 14px;
-  color: #8b95a1;
-}
-
-/* Repeat Options */
-.repeat-options {
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px solid #e5e8eb;
-}
-
-/* Days Selector */
-.days-selector {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.day-btn {
-  width: 40px;
-  height: 40px;
-  border: 2px solid #e5e8eb;
-  border-radius: 10px;
-  background: white;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
-  color: #6b7684;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.day-btn:hover {
-  border-color: #4667de;
-  background: rgba(70, 103, 222, 0.05);
-}
-
-.day-btn.active {
-  border-color: #4667de;
-  background: #4667de;
-  color: white;
-}
 
 /* Modal Actions */
 .modal-actions {
   display: flex;
   gap: 12px;
-  padding: 20px;
+  padding: 20px 24px;
   background: #f8f9fa;
   border-radius: 0 0 16px 16px;
-  margin: 0 -20px -20px;
+  border-top: 1px solid #e9ecef;
+  flex-shrink: 0;
 }
 
 .modal-actions button {
@@ -325,12 +277,15 @@
 }
 
 .modal-actions .submit-btn {
-  background: #4667de;
+  background: linear-gradient(135deg, #3b5bdb 0%, #364fc7 100%);
   color: white;
+  box-shadow: 0 4px 12px rgba(59, 91, 219, 0.25);
 }
 
 .modal-actions .submit-btn:hover {
-  background: #3451c7;
+  background: linear-gradient(135deg, #364fc7 0%, #2c3e99 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(59, 91, 219, 0.35);
 }
 
 .modal-actions button:disabled {

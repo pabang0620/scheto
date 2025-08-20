@@ -22,7 +22,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { formatDate as formatDateUtil } from '../../utils/dateFormatter';
-import { getSchedules, getEmployeeSchedules, updateSchedule, deleteSchedule, createSchedule } from '../../services/api';
+import { getSchedules, getEmployeeSchedules, updateSchedule, deleteSchedule, createSchedule, company } from '../../services/api';
 import AddScheduleModal from './AddScheduleModal';
 import './ScheduleCalendarDnD.css';
 
@@ -80,8 +80,9 @@ const DraggableSchedule = ({ schedule, isDragging, companySettings }) => {
     return leaveTypeMap[leaveType?.toLowerCase()] || leaveType || '휴가';
   };
 
-  const isOnLeave = schedule.isOnLeave || false;
-  const leaveType = schedule.leaveType;
+  // Only show leave info for fixed work type
+  const isOnLeave = companySettings.workType === 'fixed' ? (schedule.isOnLeave || false) : false;
+  const leaveType = companySettings.workType === 'fixed' ? schedule.leaveType : null;
   
   return (
     <div
@@ -136,14 +137,12 @@ const DroppableDay = ({ date, schedules, leaves, companySettings, onDrop, onSche
   const getFilteredSchedules = () => {
     let filteredSchedules = schedules;
     
-    if (!companySettings.showLeaveInSchedule) {
-      // Show all schedules if leave display is disabled
-    } else if (companySettings.workType === 'fixed') {
-      // For fixed work type: show all schedules including those on leave (with styling)
-    } else {
-      // For flexible/shift work type: hide employees on leave from schedule
+    // Only filter out leave schedules for non-fixed work types
+    if (companySettings.workType !== 'fixed') {
+      // For flexible/shift work type: don't show leave-related schedules
       filteredSchedules = filteredSchedules.filter(schedule => !schedule.isOnLeave);
     }
+    // For fixed work type: show all schedules including leave
     
     return filteredSchedules;
   };
@@ -189,7 +188,7 @@ const DroppableDay = ({ date, schedules, leaves, companySettings, onDrop, onSche
       <div className="day-header">
         <div className="day-info">
           <span className="day-number">{date.getDate()}</span>
-          {leaveCount > 0 && (
+          {companySettings.workType === 'fixed' && leaveCount > 0 && (
             <span className="leave-count" title={`${leaveCount}명 휴가`}>
               휴가 {leaveCount}
             </span>
@@ -219,8 +218,8 @@ const DroppableDay = ({ date, schedules, leaves, companySettings, onDrop, onSche
           ))}
         </SortableContext>
         
-        {/* Show leave info for flexible/shift work types */}
-        {companySettings.workType !== 'fixed' && companySettings.showLeaveInSchedule && todaysLeaves.length > 0 && (
+        {/* Show leave info only for fixed work type */}
+        {companySettings.workType === 'fixed' && companySettings.showLeaveInSchedule && todaysLeaves.length > 0 && (
           <div className="leave-info-section">
             {todaysLeaves.map((leave, index) => (
               <div key={index} className="leave-info-item">
@@ -238,7 +237,7 @@ const DroppableDay = ({ date, schedules, leaves, companySettings, onDrop, onSche
 const ScheduleCalendarDnD = () => {
   const [schedules, setSchedules] = useState([]);
   const [leaves, setLeaves] = useState([]);
-  const [companySettings, setCompanySettings] = useState({ workType: 'fixed', showLeaveInSchedule: true });
+  const [companySettings, setCompanySettings] = useState({ workType: 'flexible', showLeaveInSchedule: false });
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -279,8 +278,28 @@ const ScheduleCalendarDnD = () => {
   );
 
   useEffect(() => {
+    // Fetch company settings first, then schedules
+    fetchCompanySettings();
+  }, []);
+  
+  useEffect(() => {
     fetchSchedules();
   }, [currentDate, viewMode, employeeId]);
+  
+  const fetchCompanySettings = async () => {
+    try {
+      const response = await company.getSettings();
+      if (response.data) {
+        setCompanySettings(response.data);
+        console.log('[ScheduleCalendarDnD] Company settings loaded:', response.data);
+        console.log('[ScheduleCalendarDnD] Work type:', response.data.workType);
+      }
+    } catch (error) {
+      console.error('Failed to fetch company settings:', error);
+      // Use default settings if fetch fails
+      setCompanySettings({ workType: 'flexible', showLeaveInSchedule: false });
+    }
+  };
 
   const fetchSchedules = async () => {
     try {
@@ -305,7 +324,7 @@ const ScheduleCalendarDnD = () => {
           data: {
             schedules: response.data || [],
             leaves: [],
-            companySettings: { workType: 'fixed', showLeaveInSchedule: true }
+            companySettings: companySettings // Use fetched settings
           }
         };
       } else {
@@ -321,11 +340,11 @@ const ScheduleCalendarDnD = () => {
       const responseData = response.data || {};
       const scheduleData = responseData.schedules || responseData.data || responseData || [];
       const leavesData = responseData.leaves || [];
-      const settings = responseData.companySettings || { workType: 'fixed', showLeaveInSchedule: true };
+      // Don't override company settings from schedule response if already fetched
+      // Don't override company settings from schedule response
       
       setSchedules(Array.isArray(scheduleData) ? scheduleData : []);
       setLeaves(Array.isArray(leavesData) ? leavesData : []);
-      setCompanySettings(settings);
     } catch (err) {
       setError(t('schedule.failedToLoad'));
       console.error('Schedule fetch error:', err);
@@ -712,8 +731,8 @@ const ScheduleCalendarDnD = () => {
         </div>
       )}
 
-      {/* Today's Leave Info Banner */}
-      {companySettings.showLeaveInSchedule && todaysLeaves.length > 0 && (
+      {/* Today's Leave Info Banner - Only for fixed work type */}
+      {companySettings.workType === 'fixed' && companySettings.showLeaveInSchedule && todaysLeaves.length > 0 && (
         <div className="leave-info-banner">
           <div className="leave-banner-header">
             <i className="fas fa-calendar-times"></i>

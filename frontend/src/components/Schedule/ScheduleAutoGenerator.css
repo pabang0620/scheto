@@ -325,8 +325,11 @@
 
 .employee-tags {
   display: flex;
-  gap: 6px;
   flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 8px;
+  width: 100%;
 }
 
 .rank-badge, .dept-badge, .leave-badge {

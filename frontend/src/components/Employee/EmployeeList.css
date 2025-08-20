@@ -213,7 +213,7 @@
   border: none;
   background: transparent;
   border-radius: 4px;
-  color: #6b7280;
+  color: #374151;
   cursor: pointer;
   transition: all 0.2s;
   font-size: 14px;
@@ -230,8 +230,8 @@
 }
 
 .view-btn:hover:not(.active) {
-  color: #374151;
-  background: rgba(255, 255, 255, 0.5);
+  color: #111827;
+  background: rgba(255, 255, 255, 0.7);
 }
 
 .add-employee-btn {
@@ -277,9 +277,10 @@
   border: 1px solid #e4e4e7;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-  min-height: 160px;
+  min-height: 180px; /* Increased min-height */
   display: flex;
   flex-direction: column;
+  color: #1e293b; /* Added explicit text color */
 }
 
 .employee-card:hover {
@@ -293,6 +294,8 @@
   align-items: center;
   gap: 16px;
   margin-bottom: 16px;
+  position: relative;
+  z-index: 1;
 }
 
 .employee-avatar {
@@ -326,23 +329,23 @@
   min-width: 0;
 }
 
-.employee-name {
+.employee-card .employee-name {
   font-size: 18px;
   font-weight: 700;
   color: #1e293b !important;
   margin: 0 0 4px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  display: block; /* Changed from flex to block */
   word-break: keep-all;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  background: transparent; /* Ensure no background */
+  visibility: visible; /* Ensure visibility */
 }
 
-.employee-role {
+.employee-card .employee-role {
   font-size: 14px;
-  color: #64748b;
+  color: #64748b !important;
   margin: 0;
   display: flex;
   align-items: center;
@@ -351,12 +354,14 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  visibility: visible;
 }
 
-.employee-department {
+.employee-card .employee-department {
   font-size: 13px;
-  color: #64748b;
+  color: #64748b !important;
   font-weight: 500;
+  visibility: visible;
 }
 
 .role-badge {
@@ -387,7 +392,7 @@
 }
 
 /* Rank Display */
-.rank-display {
+.employee-card .rank-display {
   position: absolute;
   top: 16px;
   right: 16px;
@@ -400,6 +405,19 @@
   font-weight: 800;
   font-size: 14px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 10; /* Ensure it stays above card content */
+}
+
+/* Rank display for table view */
+.employee-table .rank-display {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 12px;
 }
 
 .rank-s {
@@ -440,17 +458,25 @@
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: #64748b;
+  color: #475569; /* Changed from #64748b to darker color */
   word-break: keep-all;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.detail-item i {
+.employee-card .detail-item span {
+  color: #334155 !important; /* Explicit color for span elements */
+  visibility: visible;
+  display: inline;
+}
+
+.employee-card .detail-item i {
   width: 16px;
-  color: #94a3b8;
+  color: #6b7280 !important;
   font-size: 12px;
+  flex-shrink: 0;
+  visibility: visible;
 }
 
 /* Quick Actions - 제거됨 (카드 클릭으로 상세 모달 열림) */

@@ -6,15 +6,33 @@ import {
   getLeaveRequests,
   getSchedules,
   generateSchedule,
-  updateSchedule
+  updateSchedule,
+  getShiftPatterns,
+  bulkUpdateShiftPatterns
 } from '../../services/api';
 import WeeklyHoursCalculator from './WeeklyHoursCalculator';
 import ShiftPatternBuilder from './ShiftPatternBuilder';
+import ShiftPatternManager from './ShiftPatternManager';
+import ConflictManager from './ConflictManager';
 import ScheduleHeatmap from './ScheduleHeatmap';
 import './ScheduleAutoGenerator.css';
+import './ScheduleAutoGenerator-Mobile.css';
 
 const ScheduleAutoGenerator = () => {
   const { t } = useLanguage();
+  
+  // Helper function - Define before useMemo hooks
+  const calculateShiftHours = (start, end) => {
+    const startTime = new Date(`2000-01-01T${start}`);
+    const endTime = new Date(`2000-01-01T${end}`);
+    
+    // Handle overnight shifts
+    if (endTime < startTime) {
+      endTime.setDate(endTime.getDate() + 1);
+    }
+    
+    return (endTime - startTime) / (1000 * 60 * 60);
+  };
   
   // Step management
   const [currentStep, setCurrentStep] = useState(1);
@@ -39,13 +57,20 @@ const ScheduleAutoGenerator = () => {
   const [shiftPatterns, setShiftPatterns] = useState([
     { 
       id: 1, 
-      name: '오전 근무', 
+      name: '일반 근무', 
       start: '09:00', 
       end: '18:00', 
       requiredStaff: 2, 
       enabled: true,
       color: '#3B82F6',
-      days: [1, 2, 3, 4, 5] // Monday to Friday
+      days: [1, 2, 3, 4, 5], // Monday to Friday
+      requirements: {
+        minRankS: 0,
+        minRankA: 0,
+        minRankB: 0,
+        minExperience3Years: 0,
+        minExperience5Years: 0
+      }
     }
   ]);
   
@@ -60,11 +85,13 @@ const ScheduleAutoGenerator = () => {
   
   // Step 3: Generated Schedule
   const [generatedSchedule, setGeneratedSchedule] = useState(null);
+  const [showConflictModal, setShowConflictModal] = useState(false);
   const [scheduleDragSource, setScheduleDragSource] = useState(null);
   
   // Load initial data
   useEffect(() => {
     loadInitialData();
+    loadShiftPatterns();
   }, []);
   
   // Auto-set end date
@@ -113,6 +140,76 @@ const ScheduleAutoGenerator = () => {
       setLoading(false);
     }
   };
+
+  // Load shift patterns from database
+  const loadShiftPatterns = async () => {
+    try {
+      const res = await getShiftPatterns(1); // TODO: Get actual company ID
+      const patterns = res.data?.patterns || [];
+      
+      if (patterns.length > 0) {
+        // Convert from database format to component format
+        const formattedPatterns = patterns.map(p => ({
+          id: p.id,
+          name: p.name,
+          start: p.startTime,
+          end: p.endTime,
+          requiredStaff: p.requiredStaff,
+          enabled: p.enabled,
+          color: p.color,
+          days: Array.isArray(p.days) ? p.days : JSON.parse(p.days || '[1,2,3,4,5]'),
+          requirements: typeof p.requirements === 'object' ? p.requirements : JSON.parse(p.requirements || '{}')
+        }));
+        setShiftPatterns(formattedPatterns);
+      }
+    } catch (err) {
+      console.error('Failed to load shift patterns:', err);
+      // Keep default pattern if loading fails
+    }
+  };
+
+  // Save shift patterns to database
+  const saveShiftPatterns = async (patterns) => {
+    try {
+      const formattedPatterns = patterns.map(p => ({
+        id: p.id,
+        name: p.name,
+        start: p.start,
+        end: p.end,
+        requiredStaff: p.requiredStaff,
+        enabled: p.enabled,
+        color: p.color,
+        days: p.days,
+        requirements: p.requirements || {}
+      }));
+      
+      const res = await bulkUpdateShiftPatterns({
+        patterns: formattedPatterns,
+        companyId: 1, // TODO: Get actual company ID
+        deleteOthers: true // Delete patterns not in the list
+      });
+      
+      if (res.data?.patterns) {
+        // Update with saved patterns (includes new IDs)
+        const savedPatterns = res.data.patterns.map(p => ({
+          id: p.id,
+          name: p.name,
+          start: p.startTime,
+          end: p.endTime,
+          requiredStaff: p.requiredStaff,
+          enabled: p.enabled,
+          color: p.color,
+          days: Array.isArray(p.days) ? p.days : JSON.parse(p.days || '[1,2,3,4,5]'),
+          requirements: typeof p.requirements === 'object' ? p.requirements : JSON.parse(p.requirements || '{}')
+        }));
+        setShiftPatterns(savedPatterns);
+        setSuccess('패턴이 저장되었습니다.');
+      }
+    } catch (err) {
+      console.error('Failed to save shift patterns:', err);
+      setError('패턴 저장에 실패했습니다.');
+    }
+  };
   
   // Calculate total required hours
   const totalRequiredHours = useMemo(() => {
@@ -144,18 +241,6 @@ const ScheduleAutoGenerator = () => {
     }, 0);
   }, [generatedSchedule]);
   
-  const calculateShiftHours = (start, end) => {
-    const startTime = new Date(`2000-01-01T${start}`);
-    const endTime = new Date(`2000-01-01T${end}`);
-    
-    // Handle overnight shifts
-    if (endTime < startTime) {
-      endTime.setDate(endTime.getDate() + 1);
-    }
-    
-    return (endTime - startTime) / (1000 * 60 * 60);
-  };
-  
   // Toggle employee selection
   const toggleEmployee = (employeeId) => {
     setPeriodData(prev => ({
@@ -167,26 +252,16 @@ const ScheduleAutoGenerator = () => {
   };
   
   // Add conflict relationship
-  const addConflict = (emp1Id, emp2Id) => {
-    if (!emp1Id || !emp2Id || emp1Id === emp2Id) return;
-    
-    const emp1 = employees.find(e => e.id === parseInt(emp1Id));
-    const emp2 = employees.find(e => e.id === parseInt(emp2Id));
-    
+  const addConflict = (conflictData) => {
     const exists = workConditions.conflicts.some(c => 
-      (c.emp1Id === emp1Id && c.emp2Id === emp2Id) ||
-      (c.emp1Id === emp2Id && c.emp2Id === emp1Id)
+      (c.emp1Id === conflictData.emp1Id && c.emp2Id === conflictData.emp2Id) ||
+      (c.emp1Id === conflictData.emp2Id && c.emp2Id === conflictData.emp1Id)
     );
     
     if (!exists) {
       setWorkConditions(prev => ({
         ...prev,
-        conflicts: [...prev.conflicts, {
-          emp1Id: parseInt(emp1Id),
-          emp2Id: parseInt(emp2Id),
-          emp1Name: emp1?.name,
-          emp2Name: emp2?.name
-        }]
+        conflicts: [...prev.conflicts, conflictData]
       }));
     }
   };
@@ -199,8 +274,55 @@ const ScheduleAutoGenerator = () => {
     }));
   };
   
+  // Validate requirements
+  const validateRequirements = () => {
+    const selectedEmps = employees.filter(e => periodData.selectedEmployees.includes(e.id));
+    
+    // Count available employees by rank and experience
+    const counts = {
+      rankS: selectedEmps.filter(e => employeeAbilities[e.id]?.rank === 'S').length,
+      rankA: selectedEmps.filter(e => employeeAbilities[e.id]?.rank === 'A').length,
+      rankB: selectedEmps.filter(e => employeeAbilities[e.id]?.rank === 'B').length,
+      exp3Years: selectedEmps.filter(e => e.yearsOfExperience >= 3).length,
+      exp5Years: selectedEmps.filter(e => e.yearsOfExperience >= 5).length
+    };
+    
+    // Check if any pattern's requirements exceed available staff
+    const warnings = [];
+    for (const pattern of shiftPatterns.filter(p => p.enabled)) {
+      const reqs = pattern.requirements || {};
+      
+      if (reqs.minRankS > counts.rankS) {
+        warnings.push(`${pattern.name}: S급 ${reqs.minRankS}명 필요 (현재 ${counts.rankS}명)`);
+      }
+      if (reqs.minRankA > counts.rankA) {
+        warnings.push(`${pattern.name}: A급 ${reqs.minRankA}명 필요 (현재 ${counts.rankA}명)`);
+      }
+      if (reqs.minRankB > counts.rankB) {
+        warnings.push(`${pattern.name}: B급 ${reqs.minRankB}명 필요 (현재 ${counts.rankB}명)`);
+      }
+      if (reqs.minExperience3Years > counts.exp3Years) {
+        warnings.push(`${pattern.name}: 3년차↑ ${reqs.minExperience3Years}명 필요 (현재 ${counts.exp3Years}명)`);
+      }
+      if (reqs.minExperience5Years > counts.exp5Years) {
+        warnings.push(`${pattern.name}: 5년차↑ ${reqs.minExperience5Years}명 필요 (현재 ${counts.exp5Years}명)`);
+      }
+    }
+    
+    return warnings;
+  };
+
   // Generate schedule
   const handleGenerateSchedule = async () => {
+    // Validate requirements first
+    const warnings = validateRequirements();
+    if (warnings.length > 0) {
+      const proceed = window.confirm(
+        `다음 요구사항을 충족하지 못합니다:\n\n${warnings.join('\n')}\n\n그래도 계속하시겠습니까?`
+      );
+      if (!proceed) return;
+    }
+    
     setLoading(true);
     setError('');
     
@@ -214,7 +336,8 @@ const ScheduleAutoGenerator = () => {
           start: p.start,
           end: p.end,
           staff: p.requiredStaff,
-          days: p.days
+          days: p.days,
+          requirements: p.requirements || {}
         })),
         conflicts: workConditions.conflicts.map(c => ({
           employee1: c.emp1Id,
@@ -224,7 +347,8 @@ const ScheduleAutoGenerator = () => {
         maxConsecutiveDays: workConditions.maxConsecutiveDays,
         minRestDays: workConditions.minRestDays,
         avoidWeekends: workConditions.avoidWeekends,
-        balanceWorkload: workConditions.balanceWorkload
+        balanceWorkload: workConditions.balanceWorkload,
+        employeeAbilities: employeeAbilities
       };
       
       const res = await generateSchedule(requestData);
@@ -335,7 +459,7 @@ const ScheduleAutoGenerator = () => {
       {/* Alert Messages */}
       {error && (
         <div className="alert alert-error">
-          <span className="alert-icon">⚠️</span>
+          <span className="alert-icon"><i className="fas fa-exclamation-triangle"></i></span>
           <span>{error}</span>
           <button className="alert-close" onClick={() => setError('')}>×</button>
         </div>
@@ -352,7 +476,7 @@ const ScheduleAutoGenerator = () => {
       {currentStep === 1 && (
         <div className="step-container step-1">
           <div className="step-header">
-            <h2>📅 근무 기간 및 직원 선택</h2>
+            <h2><i className="fas fa-calendar-alt"></i> 근무 기간 및 직원 선택</h2>
             <p>스케줄을 생성할 기간과 근무할 직원을 선택하세요</p>
           </div>
           
@@ -396,36 +520,41 @@ const ScheduleAutoGenerator = () => {
               )}
             </div>
             
-            {/* Employee Selection */}
-            <div className="section employee-section">
-              <div className="section-header">
-                <h3>근무 직원 선택</h3>
-                <div className="selection-controls">
-                  <button 
-                    className="btn btn-ghost btn-sm"
-                    onClick={() => setPeriodData(prev => ({
-                      ...prev,
-                      selectedEmployees: employees.map(e => e.id)
-                    }))}
-                  >
-                    전체 선택
-                  </button>
-                  <button 
-                    className="btn btn-ghost btn-sm"
-                    onClick={() => setPeriodData(prev => ({
-                      ...prev,
-                      selectedEmployees: []
-                    }))}
-                  >
-                    선택 해제
-                  </button>
-                  <span className="selection-count">
-                    {periodData.selectedEmployees.length}명 선택
-                  </span>
+            {/* Employee Selection - Mobile Optimized */}
+            <div className="section employee-section-mobile">
+              <div className="mobile-section-header">
+                <h3><i className="fas fa-users"></i> 근무할 직원을 선택하세요</h3>
+                <p className="helper-text">스케줄을 생성할 직원을 선택해주세요</p>
+              </div>
+              
+              <div className="mobile-selection-bar">
+                <button 
+                  className="mobile-select-btn"
+                  onClick={() => setPeriodData(prev => ({
+                    ...prev,
+                    selectedEmployees: employees.map(e => e.id)
+                  }))}
+                >
+                  <i className="fas fa-check-circle"></i>
+                  전체 선택
+                </button>
+                <button 
+                  className="mobile-select-btn"
+                  onClick={() => setPeriodData(prev => ({
+                    ...prev,
+                    selectedEmployees: []
+                  }))}
+                >
+                  <i className="fas fa-times-circle"></i>
+                  선택 해제
+                </button>
+                <div className="mobile-count-badge">
+                  <span className="count-number">{periodData.selectedEmployees.length}</span>
+                  <span className="count-label">명</span>
                 </div>
               </div>
               
-              <div className="employee-grid">
+              <div className="mobile-employee-list">
                 {employees.map(emp => {
                   const onLeave = isOnLeave(emp.id, periodData.startDate);
                   const rank = getEmployeeRank(emp.id);
@@ -434,25 +563,31 @@ const ScheduleAutoGenerator = () => {
                   return (
                     <div 
                       key={emp.id} 
-                      className={`employee-card ${isSelected ? 'selected' : ''} ${onLeave ? 'on-leave' : ''}`}
+                      className={`mobile-employee-item ${isSelected ? 'selected' : ''} ${onLeave ? 'on-leave' : ''}`}
                       onClick={() => !onLeave && toggleEmployee(emp.id)}
                     >
-                      <div className="employee-checkbox-wrapper">
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => {}}
-                          disabled={onLeave}
-                          className="employee-checkbox"
-                        />
-                      </div>
-                      <div className="employee-info">
-                        <div className="employee-name">{emp.name}</div>
-                        <div className="employee-tags">
-                          <span className={`rank-badge rank-${rank.toLowerCase()}`}>{rank}급</span>
-                          {emp.department && <span className="dept-badge">{emp.department}</span>}
-                          {onLeave && <span className="leave-badge">휴가중</span>}
+                      <div className="mobile-employee-left">
+                        <div className="mobile-employee-avatar">
+                          {emp.name?.charAt(0)}
                         </div>
+                        <div className="mobile-employee-info">
+                          <div className="mobile-employee-name">{emp.name}</div>
+                          <div className="mobile-employee-meta">
+                            <span className={`mobile-rank rank-${rank.toLowerCase()}`}>{rank}급</span>
+                            {emp.yearsOfExperience > 0 && (
+                              <span className="mobile-experience">{emp.yearsOfExperience}년차</span>
+                            )}
+                            {emp.department && <span className="mobile-dept">{emp.department}</span>}
+                            {onLeave && <span className="mobile-leave">휴가</span>}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mobile-employee-right">
+                        {!onLeave && (
+                          <div className={`mobile-check-icon ${isSelected ? 'checked' : ''}`}>
+                            <i className="fas fa-check"></i>
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
@@ -463,16 +598,112 @@ const ScheduleAutoGenerator = () => {
         </div>
       )}
       
-      {/* Step 2: Shift Patterns & Conditions */}
+      {/* Step 2: Simplified Work Settings */}
       {currentStep === 2 && (
-        <div className="step-container step-2">
+        <div className="step-container step-2-mobile">
           <div className="step-header">
-            <h2>⚙️ 근무 패턴 및 조건 설정</h2>
-            <p>근무 시간, 패턴 및 제약 조건을 설정하세요</p>
+            <h2>🕐️ 근무 시간 설정</h2>
+            <p>간단하게 근무 시간을 설정해주세요</p>
           </div>
           
-          <div className="step-content">
-            <div className="grid-layout">
+          <div className="mobile-step-content">
+            {/* Shift Pattern Manager - Works for both PC and Mobile */}
+            <ShiftPatternManager 
+              patterns={shiftPatterns}
+              onPatternsChange={setShiftPatterns}
+              onSave={() => saveShiftPatterns(shiftPatterns)}
+            />
+            
+            {/* Simple Rules with Explanations */}
+            <div className="mobile-rules-section">
+              <h3><i className="fas fa-cog"></i> 근무 제약 조건 설정</h3>
+              <p className="rules-explanation">
+                스케줄 생성 시 지켜야 할 규칙들을 설정합니다.
+                이 설정들은 직원들의 건강과 워라밸을 보호하기 위한 것입니다.
+              </p>
+              
+              <div className="mobile-rules-list">
+                <div className="mobile-rule-item">
+                  <div className="rule-icon"><i className="fas fa-calendar-check"></i></div>
+                  <div className="rule-content">
+                    <div className="rule-info">
+                      <div className="rule-label">연속 근무 제한</div>
+                      <div className="rule-description">직원이 쉬는 날 없이 연속으로 일할 수 있는 최대 일수</div>
+                    </div>
+                    <select 
+                      className="mobile-select"
+                      value={workConditions.maxConsecutiveDays}
+                      onChange={(e) => setWorkConditions(prev => ({
+                        ...prev,
+                        maxConsecutiveDays: parseInt(e.target.value)
+                      }))}
+                    >
+                      <option value="3">3일까지</option>
+                      <option value="4">4일까지</option>
+                      <option value="5">5일까지</option>
+                      <option value="6">6일까지</option>
+                      <option value="7">제한 없음</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div className="mobile-rule-item">
+                  <div className="rule-icon"><i className="fas fa-bed"></i></div>
+                  <div className="rule-content">
+                    <div className="rule-info">
+                      <div className="rule-label">주당 최소 휴무</div>
+                      <div className="rule-description">매주 보장되어야 하는 최소 휴무 일수</div>
+                    </div>
+                    <select 
+                      className="mobile-select"
+                      value={workConditions.minRestDays}
+                      onChange={(e) => setWorkConditions(prev => ({
+                        ...prev,
+                        minRestDays: parseInt(e.target.value)
+                      }))}
+                    >
+                      <option value="1">주 1일</option>
+                      <option value="2">주 2일</option>
+                      <option value="3">주 3일</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div className="mobile-rule-item">
+                  <div className="rule-icon"><i className="fas fa-exclamation-triangle"></i></div>
+                  <div className="rule-content">
+                    <div className="rule-info">
+                      <div className="rule-label">같이 근무 불가</div>
+                      <div className="rule-description">
+                        서로 같은 시간에 근무하면 안 되는 직원들
+                        (예: 부부, 갈등 관계 등)
+                      </div>
+                    </div>
+                    <button 
+                      className="mobile-btn-small"
+                      onClick={() => setShowConflictModal(true)}
+                    >
+                      {workConditions.conflicts.length > 0 
+                        ? `${workConditions.conflicts.length}개 설정됨`
+                        : '설정하기'
+                      }
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mobile-step-info">
+              <i className="fas fa-info-circle"></i>
+              <p>
+                <strong><i className="fas fa-lightbulb"></i> 알아두세요!</strong><br/>
+                자동 생성은 이 규칙들을 최대한 지키려고 하지만, 
+                직원이 부족하거나 특수한 상황에서는 일부 규칙이 지켜지지 않을 수 있습니다.
+                생성된 스케줄은 언제든지 수동으로 수정 가능합니다.
+              </p>
+            </div>
+            
+            <div className="grid-layout" style={{display: 'none'}}>
               {/* Weekly Hours Calculator */}
               <WeeklyHoursCalculator
                 selectedEmployees={periodData.selectedEmployees}
@@ -492,55 +723,44 @@ const ScheduleAutoGenerator = () => {
               
               {/* Conflict Settings */}
               <div className="section conflict-section">
-                <h3>🚫 근무 제약 조건</h3>
+                <h3><i className="fas fa-user-slash"></i> 근무 제약 조건</h3>
                 
                 <div className="conflict-builder">
                   <h4>같이 근무 불가 설정</h4>
-                  <div className="conflict-adder">
-                    <select id="conflict-emp1" className="select-input">
-                      <option value="">직원 1 선택</option>
-                      {periodData.selectedEmployees.map(empId => {
-                        const emp = employees.find(e => e.id === empId);
-                        return <option key={empId} value={empId}>{emp?.name}</option>;
-                      })}
-                    </select>
-                    <span className="conflict-separator">⚡</span>
-                    <select id="conflict-emp2" className="select-input">
-                      <option value="">직원 2 선택</option>
-                      {periodData.selectedEmployees.map(empId => {
-                        const emp = employees.find(e => e.id === empId);
-                        return <option key={empId} value={empId}>{emp?.name}</option>;
-                      })}
-                    </select>
-                    <button 
-                      className="btn btn-primary btn-sm"
-                      onClick={() => {
-                        const emp1 = document.getElementById('conflict-emp1').value;
-                        const emp2 = document.getElementById('conflict-emp2').value;
-                        addConflict(emp1, emp2);
-                        document.getElementById('conflict-emp1').value = '';
-                        document.getElementById('conflict-emp2').value = '';
-                      }}
-                    >
-                      추가
-                    </button>
-                  </div>
+                  <p className="conflict-description">
+                    서로 같은 시간에 근무하면 안 되는 직원들을 설정합니다.
+                  </p>
+                  <button 
+                    className="btn btn-primary"
+                    onClick={() => setShowConflictModal(true)}
+                  >
+                    <i className="fas fa-user-slash"></i>
+                    {workConditions.conflicts.length > 0 
+                      ? `제약 관리 (${workConditions.conflicts.length}개 설정됨)`
+                      : '제약 설정하기'
+                    }
+                  </button>
                   
-                  <div className="conflict-list">
-                    {workConditions.conflicts.map((conflict, idx) => (
-                      <div key={idx} className="conflict-item">
-                        <span className="conflict-text">
-                          {conflict.emp1Name} ⚡ {conflict.emp2Name}
-                        </span>
-                        <button 
-                          className="btn btn-danger btn-xs"
-                          onClick={() => removeConflict(idx)}
-                        >
-                          삭제
-                        </button>
-                      </div>
-                    ))}
-                  </div>
+                  {workConditions.conflicts.length > 0 && (
+                    <div className="conflict-list">
+                      {workConditions.conflicts.map((conflict, idx) => (
+                        <div key={idx} className="conflict-item">
+                          <span className="conflict-text">
+                            <i className="fas fa-user"></i> {conflict.emp1Name} 
+                            <i className="fas fa-times" style={{margin: '0 10px', color: '#dc3545'}}></i> 
+                            <i className="fas fa-user"></i> {conflict.emp2Name}
+                            {conflict.reason && (
+                              <span className="conflict-reason-badge" style={{marginLeft: '10px', fontSize: '12px', color: '#6c757d'}}>
+                                ({conflict.reason === 'family' ? '가족 관계' : 
+                                  conflict.reason === 'conflict' ? '갈등 관계' :
+                                  conflict.reason === 'skill' ? '동일 업무' : '기타'})
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 
                 {/* Additional Conditions */}
@@ -733,7 +953,7 @@ const ScheduleAutoGenerator = () => {
                     className="btn btn-ghost btn-lg"
                     onClick={() => setCurrentStep(2)}
                   >
-                    ⚙️ 설정 수정
+                    <i className="fas fa-cog"></i> 설정 수정
                   </button>
                 </div>
               </div>
@@ -773,6 +993,16 @@ const ScheduleAutoGenerator = () => {
           </div>
         </div>
       )}
+      
+      {/* Conflict Manager Modal */}
+      <ConflictManager
+        employees={employees.filter(e => periodData.selectedEmployees.includes(e.id))}
+        conflicts={workConditions.conflicts}
+        onAddConflict={addConflict}
+        onRemoveConflict={removeConflict}
+        isOpen={showConflictModal}
+        onClose={() => setShowConflictModal(false)}
+      />
     </div>
   );
 };
