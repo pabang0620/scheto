@@ -17,6 +17,11 @@ router.get('/', leaveController.getAllLeaves);
 // @access  Private (Admin/Manager only)
 router.get('/pending', leaveController.getPendingLeaves);
 
+// @route   GET /api/leaves/my-requests
+// @desc    Get my leave requests
+// @access  Private
+router.get('/my-requests', leaveController.getMyLeaves);
+
 // @route   GET /api/leaves/employee/:employeeId
 // @desc    Get leave requests by employee ID
 // @access  Private

@@ -13,6 +13,7 @@ const scheduleRoutes = require('./routes/scheduleRoutes');
 const leaveRoutes = require('./routes/leaveRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const userRoutes = require('./routes/userRoutes');
+const noticeRoutes = require('./routes/noticeRoutes');
 
 // Import middlewares
 const { errorMiddleware } = require('./middlewares/errorMiddleware');
@@ -38,6 +39,7 @@ app.use('/api/schedules', scheduleRoutes);
 app.use('/api/leaves', leaveRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/notices', noticeRoutes);
 app.use('/api/company', require('./routes/companyRoutes'));
 
 // Serve React app for all non-API routes (SPA support)

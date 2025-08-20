@@ -239,9 +239,287 @@ const getScheduleSummary = async (req, res) => {
   }
 };
 
+// @desc    Get dashboard alerts (critical alerts, warnings, and info)
+// @route   GET /api/dashboard/alerts
+// @access  Private
+const getDashboardAlerts = async (req, res) => {
+  try {
+    const alerts = [];
+    const now = new Date();
+    const user = req.user;
+
+    // Critical Alerts
+    
+    // 1. Check for critical notices
+    const criticalNotices = await prisma.notice.findMany({
+      where: {
+        priority: 'critical',
+        OR: [
+          { expiresAt: null },
+          { expiresAt: { gt: now } }
+        ],
+        readByUsers: {
+          none: {
+            userId: req.userId
+          }
+        }
+      },
+      take: 3,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        title: true,
+        createdAt: true
+      }
+    });
+
+    criticalNotices.forEach(notice => {
+      alerts.push({
+        type: 'critical',
+        category: 'notice',
+        title: 'Critical Notice',
+        message: notice.title,
+        timestamp: notice.createdAt,
+        action: {
+          type: 'link',
+          url: `/notices/${notice.id}`,
+          label: 'View Notice'
+        }
+      });
+    });
+
+    // 2. Check for expiring notices (within 24 hours)
+    const expiringNotices = await prisma.notice.findMany({
+      where: {
+        expiresAt: {
+          gte: now,
+          lte: new Date(now.getTime() + 24 * 60 * 60 * 1000) // Next 24 hours
+        },
+        priority: { in: ['high', 'critical'] }
+      },
+      take: 2,
+      orderBy: { expiresAt: 'asc' },
+      select: {
+        id: true,
+        title: true,
+        expiresAt: true
+      }
+    });
+
+    expiringNotices.forEach(notice => {
+      alerts.push({
+        type: 'critical',
+        category: 'system',
+        title: 'Notice Expiring Soon',
+        message: `"${notice.title}" expires soon`,
+        timestamp: notice.expiresAt,
+        action: {
+          type: 'link',
+          url: `/notices/${notice.id}`,
+          label: 'View Notice'
+        }
+      });
+    });
+
+    // Warnings
+
+    // 1. Check for high priority unread notices
+    const highPriorityNotices = await prisma.notice.findMany({
+      where: {
+        priority: 'high',
+        OR: [
+          { expiresAt: null },
+          { expiresAt: { gt: now } }
+        ],
+        readByUsers: {
+          none: {
+            userId: req.userId
+          }
+        }
+      },
+      take: 3,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        title: true,
+        createdAt: true
+      }
+    });
+
+    highPriorityNotices.forEach(notice => {
+      alerts.push({
+        type: 'warning',
+        category: 'notice',
+        title: 'High Priority Notice',
+        message: notice.title,
+        timestamp: notice.createdAt,
+        action: {
+          type: 'link',
+          url: `/notices/${notice.id}`,
+          label: 'View Notice'
+        }
+      });
+    });
+
+    // 2. Check for pending leave requests (for admins/managers)
+    if (user.role === 'admin' || user.role === 'manager') {
+      const pendingLeaves = await prisma.leave.count({
+        where: {
+          status: 'pending'
+        }
+      });
+
+      if (pendingLeaves > 0) {
+        alerts.push({
+          type: 'warning',
+          category: 'management',
+          title: 'Pending Leave Requests',
+          message: `${pendingLeaves} leave request${pendingLeaves > 1 ? 's' : ''} awaiting review`,
+          timestamp: new Date(),
+          action: {
+            type: 'link',
+            url: '/leaves',
+            label: 'Review Requests'
+          }
+        });
+      }
+    }
+
+    // 3. Check for understaffing (for admins/managers)
+    if (user.role === 'admin' || user.role === 'manager') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const todaySchedules = await prisma.schedule.count({
+        where: {
+          date: today,
+          status: { not: 'cancelled' }
+        }
+      });
+
+      const totalEmployees = await prisma.employee.count();
+      
+      if (totalEmployees > 0 && todaySchedules < Math.ceil(totalEmployees * 0.5)) {
+        alerts.push({
+          type: 'warning',
+          category: 'staffing',
+          title: 'Low Staffing Today',
+          message: `Only ${todaySchedules} out of ${totalEmployees} employees scheduled`,
+          timestamp: new Date(),
+          action: {
+            type: 'link',
+            url: '/schedules',
+            label: 'View Schedules'
+          }
+        });
+      }
+    }
+
+    // Info Alerts
+
+    // 1. Check for general unread notices
+    const unreadNoticesCount = await prisma.notice.count({
+      where: {
+        priority: { in: ['medium', 'low'] },
+        OR: [
+          { expiresAt: null },
+          { expiresAt: { gt: now } }
+        ],
+        readByUsers: {
+          none: {
+            userId: req.userId
+          }
+        }
+      }
+    });
+
+    if (unreadNoticesCount > 0) {
+      alerts.push({
+        type: 'info',
+        category: 'notice',
+        title: 'Unread Notices',
+        message: `You have ${unreadNoticesCount} unread notice${unreadNoticesCount > 1 ? 's' : ''}`,
+        timestamp: new Date(),
+        action: {
+          type: 'link',
+          url: '/notices',
+          label: 'View All Notices'
+        }
+      });
+    }
+
+    // 2. Check for upcoming shifts (for employees)
+    if (user.employee) {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0);
+      
+      const tomorrowEnd = new Date(tomorrow);
+      tomorrowEnd.setHours(23, 59, 59, 999);
+
+      const tomorrowShifts = await prisma.schedule.findMany({
+        where: {
+          employeeId: user.employee.id,
+          date: {
+            gte: tomorrow,
+            lte: tomorrowEnd
+          },
+          status: { not: 'cancelled' }
+        },
+        select: {
+          startTime: true,
+          endTime: true
+        }
+      });
+
+      if (tomorrowShifts.length > 0) {
+        const shift = tomorrowShifts[0];
+        alerts.push({
+          type: 'info',
+          category: 'schedule',
+          title: 'Upcoming Shift',
+          message: `Tomorrow: ${shift.startTime} - ${shift.endTime}`,
+          timestamp: tomorrow,
+          action: {
+            type: 'link',
+            url: '/schedules',
+            label: 'View Schedule'
+          }
+        });
+      }
+    }
+
+    // Sort alerts by priority and timestamp
+    const priorityOrder = { critical: 0, warning: 1, info: 2 };
+    alerts.sort((a, b) => {
+      if (priorityOrder[a.type] !== priorityOrder[b.type]) {
+        return priorityOrder[a.type] - priorityOrder[b.type];
+      }
+      return new Date(b.timestamp) - new Date(a.timestamp);
+    });
+
+    // Limit total alerts to prevent overwhelming the user
+    const limitedAlerts = alerts.slice(0, 10);
+
+    res.json({
+      alerts: limitedAlerts,
+      counts: {
+        critical: alerts.filter(a => a.type === 'critical').length,
+        warning: alerts.filter(a => a.type === 'warning').length,
+        info: alerts.filter(a => a.type === 'info').length,
+        total: alerts.length
+      }
+    });
+  } catch (error) {
+    console.error('Dashboard alerts 에러:', error);
+    res.status(500).json({ message: 'Failed to get dashboard alerts' });
+  }
+};
+
 module.exports = {
   getStats,
   getRecentActivity,
   getUpcomingSchedules,
-  getScheduleSummary
+  getScheduleSummary,
+  getDashboardAlerts
 };

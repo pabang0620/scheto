@@ -162,7 +162,22 @@ const ko = {
     createSchedule: '스케줄 생성',
     addEmployee: '직원 추가',
     autoGenerate: '자동 생성',
-    viewReports: '보고서 보기'
+    viewReports: '보고서 보기',
+    // Alert Center
+    alerts: '알림 센터',
+    noAlerts: '현재 알림이 없습니다',
+    critical: '중요',
+    warning: '경고',
+    info: '정보',
+    // Notice Board
+    notices: '공지사항',
+    noNotices: '새로운 공지사항이 없습니다',
+    unreadNotices: '읽지 않은 공지사항',
+    markAsRead: '읽음 처리',
+    newNotice: '새 공지사항',
+    announcements: '안내사항',
+    // Team Rank Distribution
+    teamRankDistribution: '팀 등급 분포'
   },
 
   employee: {
@@ -471,11 +486,60 @@ const ko = {
     scheduleChanged: '스케줄이 변경되었습니다'
   },
 
+  alerts: {
+    critical: '중요 알림',
+    warning: '경고 알림',
+    info: '정보 알림',
+    system: '시스템 알림',
+    maintenance: '시스템 점검',
+    staffShortage: '인력 부족',
+    scheduleConflict: '스케줄 충돌',
+    leaveConflict: '휴가 충돌',
+    overtime: '초과 근무',
+    noAlerts: '현재 알림이 없습니다'
+  },
+
+  notices: {
+    general: '일반 공지',
+    important: '중요 공지',
+    policy: '정책 변경',
+    event: '이벤트',
+    training: '교육',
+    holiday: '휴일',
+    meeting: '회의',
+    announcement: '공지사항',
+    noNotices: '새로운 공지사항이 없습니다',
+    readAll: '모두 읽음',
+    unreadCount: '읽지 않음'
+  },
+
   fab: {
     addSchedule: '스케줄 추가',
     addEmployee: '직원 추가',
     requestLeave: '휴가 신청',
     viewReports: '보고서 보기'
+  },
+
+  menu: {
+    dashboard: '대시보드',
+    employeeManagement: '직원 관리',
+    scheduleManagement: '스케줄 관리',
+    autoSchedule: '자동 스케줄 생성',
+    leaveManagement: '휴가 관리',
+    reports: '보고서',
+    companySettings: '회사 설정',
+    noticeManagement: '공지사항 관리',
+    myProfile: '내 프로필',
+    help: '도움말',
+    logout: '로그아웃',
+    language: '언어',
+    addEmployee: '직원 추가'
+  },
+
+  roles: {
+    admin: '관리자',
+    manager: '매니저',
+    employee: '직원'
   }
 };
 

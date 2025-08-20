@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middlewares/authMiddleware');
+const userController = require('../controllers/userController');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
@@ -10,7 +11,7 @@ const prisma = new PrismaClient();
 router.get('/me', authMiddleware, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
-      where: { id: req.userId },
+      where: { id: req.user.id },
       select: {
         id: true,
         email: true,
@@ -34,63 +35,21 @@ router.get('/me', authMiddleware, async (req, res) => {
   }
 });
 
-// @route   PUT /api/users/me
-// @desc    Update current user profile
-// @access  Private
-router.put('/me', authMiddleware, async (req, res) => {
-  try {
-    const { name, email } = req.body;
-    
-    const updatedUser = await prisma.user.update({
-      where: { id: req.userId },
-      data: {
-        name,
-        email
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true
-      }
-    });
+// Profile routes
+router.get('/profile', authMiddleware, userController.getUserProfile);
+router.put('/profile', authMiddleware, userController.updateUserProfile);
 
-    res.json(updatedUser);
-  } catch (error) {
-    console.error('Update user error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+// Preferences routes
+router.get('/preferences', authMiddleware, userController.getUserPreferences);
+router.put('/preferences', authMiddleware, userController.updateUserPreferences);
 
-// @route   PUT /api/users/me/password
-// @desc    Change password
-// @access  Private
-router.put('/me/password', authMiddleware, async (req, res) => {
-  try {
-    const { currentPassword, newPassword } = req.body;
-    
-    const user = await prisma.user.findUnique({
-      where: { id: req.userId }
-    });
+// Abilities route
+router.get('/abilities', authMiddleware, userController.getUserAbilities);
 
-    if (user.password !== currentPassword) {
-      return res.status(400).json({ message: 'Current password is incorrect' });
-    }
+// Statistics route
+router.get('/statistics', authMiddleware, userController.getUserStatistics);
 
-    await prisma.user.update({
-      where: { id: req.userId },
-      data: {
-        password: newPassword
-      }
-    });
-
-    res.json({ message: 'Password updated successfully' });
-  } catch (error) {
-    console.error('Change password error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+// Change password route
+router.put('/change-password', authMiddleware, userController.changePassword);
 
 module.exports = router;

@@ -5,11 +5,13 @@ const prisma = new PrismaClient();
 
 // @desc    Get company settings
 // @route   GET /api/company/settings
-// @access  Private (Admin only)
+// @access  Private (All authenticated users)
 const getCompanySettings = async (req, res) => {
   try {
-    // Get company associated with the logged-in user
-    const company = await prisma.company.findUnique({
+    console.log('Getting company settings for user:', req.user);
+    
+    // First try to get company associated with the logged-in user
+    let company = await prisma.company.findUnique({
       where: { userId: req.user.id },
       include: {
         user: {
@@ -22,8 +24,60 @@ const getCompanySettings = async (req, res) => {
       }
     });
 
+    // If no company exists for this user, try to get any company (for employees)
     if (!company) {
-      return res.status(404).json({ message: 'Company settings not found' });
+      company = await prisma.company.findFirst({
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              name: true
+            }
+          }
+        }
+      });
+    }
+
+    // If still no company exists, create default company settings for admin users
+    if (!company && req.user.role === 'admin') {
+      company = await prisma.company.create({
+        data: {
+          userId: req.user.id,
+          companyName: 'My Company',
+          industry: 'general',
+          companySize: 'small',
+          workType: 'flexible',
+          defaultStartTime: '09:00',
+          defaultEndTime: '18:00',
+          showLeaveInSchedule: false,
+          minStaffRequired: 1
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              name: true
+            }
+          }
+        }
+      });
+    }
+
+    // If no company exists at all, return empty settings
+    if (!company) {
+      return res.json({
+        companyName: '',
+        industry: 'general',
+        companySize: 'small',
+        workType: 'flexible',
+        defaultStartTime: '09:00',
+        defaultEndTime: '18:00',
+        showLeaveInSchedule: false,
+        minStaffRequired: 1,
+        workDays: ['mon', 'tue', 'wed', 'thu', 'fri']
+      });
     }
 
     res.json(company);

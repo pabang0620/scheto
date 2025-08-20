@@ -26,4 +26,9 @@ router.get('/upcoming-schedules', dashboardController.getUpcomingSchedules);
 // @access  Private
 router.get('/schedule-summary', dashboardController.getScheduleSummary);
 
+// @route   GET /api/dashboard/alerts
+// @desc    Get dashboard alerts (critical alerts, warnings, and info)
+// @access  Private
+router.get('/alerts', dashboardController.getDashboardAlerts);
+
 module.exports = router;

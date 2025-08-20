@@ -22,7 +22,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { formatDate as formatDateUtil } from '../../utils/dateFormatter';
-import { getSchedules, updateSchedule, deleteSchedule, createSchedule } from '../../services/api';
+import { getSchedules, getEmployeeSchedules, updateSchedule, deleteSchedule, createSchedule } from '../../services/api';
 import AddScheduleModal from './AddScheduleModal';
 import './ScheduleCalendarDnD.css';
 
@@ -93,7 +93,7 @@ const DraggableSchedule = ({ schedule, isDragging, companySettings }) => {
     >
       <div className="schedule-item-content">
         <div className="schedule-employee-row">
-          <span className="schedule-employee">{schedule.employee?.name || 'N/A'}</span>
+          <span className="schedule-employee">{schedule.employee?.name || '미배정'}</span>
           {isOnLeave && leaveType && (
             <span className="leave-badge">
               {getLeaveTypeBadge(leaveType)}
@@ -224,7 +224,7 @@ const DroppableDay = ({ date, schedules, leaves, companySettings, onDrop, onSche
           <div className="leave-info-section">
             {todaysLeaves.map((leave, index) => (
               <div key={index} className="leave-info-item">
-                <span className="leave-employee">{leave.employee?.name || 'N/A'}</span>
+                <span className="leave-employee">{leave.employee?.name || '미지정'}</span>
                 <span className="leave-type">{getLeaveTypeBadge(leave.leaveType)}</span>
               </div>
             ))}
@@ -255,6 +255,17 @@ const ScheduleCalendarDnD = () => {
   // Get employee filter from URL parameters
   const employeeId = searchParams.get('employeeId');
   const employeeName = searchParams.get('employeeName');
+  
+  // Log for debugging
+  useEffect(() => {
+    if (employeeId) {
+      console.log('[ScheduleCalendarDnD] Employee filter detected!');
+      console.log('[ScheduleCalendarDnD] Employee ID:', employeeId);
+      console.log('[ScheduleCalendarDnD] Employee Name:', employeeName || 'Not provided');
+    } else {
+      console.log('[ScheduleCalendarDnD] No employee filter - showing all schedules');
+    }
+  }, [employeeId, employeeName]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -277,17 +288,34 @@ const ScheduleCalendarDnD = () => {
       const startDate = getViewStartDate();
       const endDate = getViewEndDate();
       
-      const params = {
-        startDate: startDate.toISOString().split('T')[0],
-        endDate: endDate.toISOString().split('T')[0]
-      };
+      const startDateStr = startDate.toISOString().split('T')[0];
+      const endDateStr = endDate.toISOString().split('T')[0];
       
-      // Add employee filter if present
+      let response;
+      
+      // If employee filter is present, use employee-specific endpoint
       if (employeeId) {
-        params.employeeId = employeeId;
+        console.log(`[ScheduleCalendarDnD] Fetching schedules for employee ${employeeId}`);
+        console.log(`[ScheduleCalendarDnD] Date range: ${startDateStr} to ${endDateStr}`);
+        
+        response = await getEmployeeSchedules(employeeId, startDateStr, endDateStr);
+        
+        // Wrap the response to match expected structure
+        response = {
+          data: {
+            schedules: response.data || [],
+            leaves: [],
+            companySettings: { workType: 'fixed', showLeaveInSchedule: true }
+          }
+        };
+      } else {
+        // No employee filter, get all schedules
+        const params = {
+          startDate: startDateStr,
+          endDate: endDateStr
+        };
+        response = await getSchedules(params);
       }
-      
-      const response = await getSchedules(params);
       
       // Handle new API response structure
       const responseData = response.data || {};
@@ -694,7 +722,7 @@ const ScheduleCalendarDnD = () => {
           <div className="leave-banner-content">
             {todaysLeaves.map((leave, index) => (
               <div key={index} className="leave-banner-item">
-                <span className="leave-employee-name">{leave.employee?.name || 'N/A'}</span>
+                <span className="leave-employee-name">{leave.employee?.name || '미지정'}</span>
                 <span className="leave-type-badge">
                   {(() => {
                     const leaveTypeMap = {

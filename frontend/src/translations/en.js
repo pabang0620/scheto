@@ -162,7 +162,22 @@ const en = {
     createSchedule: 'Create Schedule',
     addEmployee: 'Add Employee',
     autoGenerate: 'Auto Generate',
-    viewReports: 'View Reports'
+    viewReports: 'View Reports',
+    // Alert Center
+    alerts: 'Alert Center',
+    noAlerts: 'No current alerts',
+    critical: 'Critical',
+    warning: 'Warning',
+    info: 'Info',
+    // Notice Board
+    notices: 'Notice Board',
+    noNotices: 'No new notices',
+    unreadNotices: 'Unread notices',
+    markAsRead: 'Mark as read',
+    newNotice: 'New notice',
+    announcements: 'Announcements',
+    // Team Rank Distribution
+    teamRankDistribution: 'Team Rank Distribution'
   },
 
   employee: {
@@ -451,6 +466,28 @@ const en = {
     viewReports: 'View Reports'
   },
 
+  menu: {
+    dashboard: 'Dashboard',
+    employeeManagement: 'Employee Management',
+    scheduleManagement: 'Schedule Management',
+    autoSchedule: 'Auto Schedule',
+    leaveManagement: 'Leave Management',
+    reports: 'Reports',
+    companySettings: 'Company Settings',
+    noticeManagement: 'Notice Management',
+    myProfile: 'My Profile',
+    help: 'Help',
+    logout: 'Logout',
+    language: 'Language',
+    addEmployee: 'Add Employee'
+  },
+
+  roles: {
+    admin: 'Administrator',
+    manager: 'Manager',
+    employee: 'Employee'
+  },
+
   notifications: {
     notifications: 'Notifications',
     notification: 'Notification',
@@ -476,6 +513,33 @@ const en = {
     nextWeek: 'Next Week',
     thisMonth: 'This Month',
     nextMonth: 'Next Month'
+  },
+
+  alerts: {
+    critical: 'Critical Alert',
+    warning: 'Warning Alert',
+    info: 'Information Alert',
+    system: 'System Alert',
+    maintenance: 'System Maintenance',
+    staffShortage: 'Staff Shortage',
+    scheduleConflict: 'Schedule Conflict',
+    leaveConflict: 'Leave Conflict',
+    overtime: 'Overtime',
+    noAlerts: 'No current alerts'
+  },
+
+  notices: {
+    general: 'General Notice',
+    important: 'Important Notice',
+    policy: 'Policy Change',
+    event: 'Event',
+    training: 'Training',
+    holiday: 'Holiday',
+    meeting: 'Meeting',
+    announcement: 'Announcement',
+    noNotices: 'No new notices',
+    readAll: 'Read all',
+    unreadCount: 'Unread'
   }
 };
 

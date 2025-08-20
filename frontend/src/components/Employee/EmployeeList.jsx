@@ -190,7 +190,7 @@ const EmployeeList = () => {
   }, []);
 
   const handleScheduleClick = useCallback((employee) => {
-    navigate(`/schedules?employee=${employee.id}`);
+    navigate(`/schedules?employeeId=${employee.id}&employeeName=${employee.name}`);
     setShowActionSheet(false);
   }, [navigate]);
 
@@ -557,7 +557,9 @@ const EmployeeList = () => {
                         <span className={`role-badge role-${role.toLowerCase()}`}>
                           {role.toUpperCase()}
                         </span>
-                        {employee.position || '직책 없음'}
+                        {employee.department && (
+                          <span className="employee-department">{employee.department}</span>
+                        )}
                       </p>
                     </div>
                   </div>
@@ -577,57 +579,12 @@ const EmployeeList = () => {
                         <span>{employee.phone}</span>
                       </div>
                     )}
-                    <div className="detail-item">
-                      <i className="fas fa-calendar"></i>
-                      <span>{formatDate(employee.hireDate)}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="card-actions">
-                    <button
-                      className="quick-action-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleViewDetails(employee);
-                      }}
-                    >
-                      <i className="fas fa-eye"></i>
-                      <span>상세</span>
-                    </button>
-                    <button
-                      className="quick-action-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEditClick(employee);
-                      }}
-                    >
-                      <i className="fas fa-edit"></i>
-                      <span>수정</span>
-                    </button>
-                    {employee.phone && (
-                      <button
-                        className="quick-action-btn"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          window.location.href = `tel:${employee.phone}`;
-                        }}
-                        title="전화 걸기"
-                      >
-                        <i className="fas fa-phone"></i>
-                        <span>전화</span>
-                      </button>
+                    {employee.position && (
+                      <div className="detail-item">
+                        <i className="fas fa-user-tie"></i>
+                        <span>{employee.position}</span>
+                      </div>
                     )}
-                    <button
-                      className="quick-action-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        window.location.href = `mailto:${employee.email}`;
-                      }}
-                      title="이메일 보내기"
-                    >
-                      <i className="fas fa-envelope"></i>
-                      <span>메일</span>
-                    </button>
                   </div>
                 </div>
               );

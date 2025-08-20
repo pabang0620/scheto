@@ -93,13 +93,20 @@ export const employees = {
   getNotes: (employeeId) => api.get(`/notes/employee/${employeeId}`),
   addNote: (employeeId, noteData) => api.post(`/notes/employee/${employeeId}`, noteData),
   // Employee schedules
-  getSchedules: (id, startDate, endDate) => 
-    api.get(`/employees/${id}/schedules`, { params: { startDate, endDate } }),
+  getSchedules: (id, startDate, endDate) => {
+    console.log('[API] Calling getEmployeeSchedules with:', { id, startDate, endDate });
+    console.log('[API] URL will be:', `/employees/${id}/schedules`);
+    return api.get(`/employees/${id}/schedules`, { params: { startDate, endDate } });
+  },
 };
 
 // Schedule API endpoints
 export const schedules = {
-  getAll: (params = {}) => api.get('/schedules', { params }),
+  getAll: (params = {}) => {
+    console.log('[API] WARNING: schedules.getAll called with params:', params);
+    console.trace('[API] Call stack for schedules.getAll');
+    return api.get('/schedules', { params });
+  },
   getById: (id) => api.get(`/schedules/${id}`),
   create: (scheduleData) => api.post('/schedules', scheduleData),
   update: (id, scheduleData) => api.put(`/schedules/${id}`, scheduleData),
@@ -111,6 +118,11 @@ export const schedules = {
   autoGenerate: (generationData) => api.post('/schedules/auto-generate', generationData),
   bulkUpdate: (updates) => api.put('/schedules/bulk-update', { updates }),
   checkConflicts: (scheduleData) => api.post('/schedules/check-conflicts', scheduleData),
+  // New advanced schedule generation endpoints
+  calculateRequirements: (data) => api.post('/schedules/calculate-requirements', data),
+  validatePatterns: (patterns) => api.post('/schedules/validate-patterns', patterns),
+  generateAdvanced: (data) => api.post('/schedules/generate-advanced', data),
+  coverageAnalysis: (params) => api.get('/schedules/coverage-analysis', { params }),
 };
 
 // Leave Request API endpoints
@@ -134,6 +146,7 @@ export const dashboard = {
     api.get('/dashboard/upcoming-schedules', { params: { limit } }),
   getScheduleSummary: (period = 'week') => 
     api.get('/dashboard/schedule-summary', { params: { period } }),
+  getAlerts: () => api.get('/dashboard/alerts'),
 };
 
 // Reports API endpoints
@@ -190,6 +203,15 @@ export const notes = {
   update: (id, noteData) => api.put(`/notes/${id}`, noteData),
 };
 
+// Notices API endpoints
+export const notices = {
+  getAll: () => api.get('/notices'),
+  getById: (id) => api.get(`/notices/${id}`),
+  markAsRead: (id) => api.put(`/notices/${id}/read`),
+  markAllAsRead: () => api.put('/notices/read-all'),
+  getUnreadCount: () => api.get('/notices/unread-count'),
+};
+
 // Convenience functions that match the old API structure
 export const login = auth.login;
 export const register = auth.register;
@@ -225,6 +247,11 @@ export const deleteLeaveRequest = leaveRequests.delete;
 
 export const getDashboardStats = dashboard.getStats;
 export const getRecentSchedules = dashboard.getUpcomingSchedules;
+export const getDashboardAlerts = dashboard.getAlerts;
+
+export const getNotices = notices.getAll;
+export const markNoticeAsRead = notices.markAsRead;
+export const getUnreadCount = notices.getUnreadCount;
 
 export const getScheduleTemplates = settings.getScheduleTemplates;
 

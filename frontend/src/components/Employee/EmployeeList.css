@@ -262,7 +262,7 @@
 /* Employee Grid */
 .employee-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 16px;
 }
 
@@ -277,6 +277,9 @@
   border: 1px solid #e4e4e7;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  min-height: 160px;
+  display: flex;
+  flex-direction: column;
 }
 
 .employee-card:hover {
@@ -326,11 +329,15 @@
 .employee-name {
   font-size: 18px;
   font-weight: 700;
-  color: #1e293b;
+  color: #1e293b !important;
   margin: 0 0 4px;
   display: flex;
   align-items: center;
   gap: 8px;
+  word-break: keep-all;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .employee-role {
@@ -340,6 +347,16 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  word-break: keep-all;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.employee-department {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
 }
 
 .role-badge {
@@ -415,6 +432,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  flex: 1;
 }
 
 .detail-item {
@@ -423,6 +441,10 @@
   gap: 8px;
   font-size: 13px;
   color: #64748b;
+  word-break: keep-all;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .detail-item i {
@@ -431,13 +453,14 @@
   font-size: 12px;
 }
 
-/* Quick Actions */
-.card-actions {
+/* Quick Actions - 제거됨 (카드 클릭으로 상세 모달 열림) */
+/* .card-actions {
   display: flex;
   gap: 8px;
-  margin-top: 16px;
+  margin-top: auto;
   padding-top: 16px;
   border-top: 1px solid #e2e8f0;
+  flex-shrink: 0;
 }
 
 .quick-action-btn {
@@ -461,18 +484,21 @@
   border-color: #3b5bdb;
   color: white;
   transform: translateY(-1px);
-}
+} */
 
 /* List View */
 .employee-table-view {
   background: white;
   border-radius: 16px;
   overflow: hidden;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
 .employee-table {
   width: 100%;
+  min-width: 600px;
   border-collapse: collapse;
 }
 
@@ -659,6 +685,7 @@
   .controls-wrapper {
     flex-direction: column;
     gap: 8px;
+    align-items: stretch;
   }
 
   .filters-group {
@@ -666,6 +693,12 @@
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     padding-bottom: 4px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .filters-group::-webkit-scrollbar {
+    display: none;
   }
 
   .filter-btn,
@@ -673,17 +706,20 @@
     flex-shrink: 0;
     font-size: 12px;
     padding: 6px 10px;
+    white-space: nowrap;
   }
 
   .filter-select {
     font-size: 12px;
     padding: 6px 28px 6px 10px;
     flex-shrink: 0;
+    min-width: 120px;
   }
 
   .view-controls {
     width: 100%;
     justify-content: space-between;
+    flex-shrink: 0;
   }
 
   .view-btn {
@@ -694,6 +730,7 @@
   .add-employee-btn {
     font-size: 12px;
     padding: 6px 10px;
+    white-space: nowrap;
   }
 
   .employee-grid {
@@ -701,20 +738,46 @@
     gap: 12px;
   }
 
+  .employee-card {
+    padding: 16px;
+    min-height: 140px;
+  }
+
   .employee-content-area {
     padding: 12px;
   }
 
+  /* Table view improvements for mobile */
+  .employee-table-view {
+    margin: 0 -12px;
+    border-radius: 12px;
+  }
+
   .employee-table {
     font-size: 12px;
+    min-width: 500px;
   }
 
   .employee-table th,
   .employee-table td {
     padding: 8px 6px;
+    white-space: nowrap;
   }
 
-  /* Hide some columns on mobile */
+  .employee-table th:first-child,
+  .employee-table td:first-child {
+    padding-left: 12px;
+    position: sticky;
+    left: 0;
+    background: white;
+    z-index: 1;
+  }
+
+  .employee-table thead th:first-child {
+    background: #f8fafc;
+  }
+
+  /* Hide less important columns on mobile */
   .employee-table th:nth-child(4),
   .employee-table td:nth-child(4),
   .employee-table th:nth-child(5),
@@ -722,16 +785,157 @@
     display: none;
   }
 
+  .table-employee-info {
+    min-width: 140px;
+  }
+
+  .table-name-role {
+    min-width: 100px;
+  }
+
+  .table-name {
+    font-size: 11px;
+  }
+
+  .table-role {
+    font-size: 10px;
+  }
+
+  .table-avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+
   .filter-btn span,
   .sort-btn span {
     display: none;
+  }
+
+  /* Card improvements for mobile */
+  .card-top {
+    gap: 12px;
+  }
+
+  .employee-avatar {
+    width: 48px;
+    height: 48px;
+    font-size: 18px;
+  }
+
+  .employee-name {
+    font-size: 16px;
+    white-space: normal;
+    word-break: keep-all;
+    line-height: 1.3;
+  }
+
+  .employee-role {
+    font-size: 13px;
+    white-space: normal;
+    word-break: keep-all;
+  }
+
+  .card-details {
+    gap: 6px;
+  }
+
+  .detail-item {
+    font-size: 12px;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+  }
+
+  /* card-actions 제거됨 */
+}
+
+/* Very small mobile screens */
+@media (max-width: 480px) {
+  .employee-page-header {
+    padding: 10px;
+  }
+
+  .page-main-title {
+    font-size: 18px;
+  }
+
+  .employee-content-area {
+    padding: 8px;
+  }
+
+  .controls-bar {
+    padding: 10px 8px;
+  }
+
+  .employee-card {
+    padding: 12px;
+    min-height: 120px;
+  }
+
+  .employee-avatar {
+    width: 44px;
+    height: 44px;
+    font-size: 16px;
+  }
+
+  .employee-name {
+    font-size: 15px;
+    white-space: normal;
+    word-break: keep-all;
+    line-height: 1.3;
+  }
+
+  /* card-actions 제거됨 */
+
+  /* Force single column grid on very small screens */
+  .employee-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Table adjustments for very small screens */
+  .employee-table {
+    min-width: 450px;
+    font-size: 11px;
+  }
+
+  .employee-table th,
+  .employee-table td {
+    padding: 6px 4px;
+  }
+
+  .table-avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+
+  .table-name {
+    font-size: 10px;
+  }
+
+  .table-role {
+    font-size: 9px;
   }
 }
 
 /* Tablet responsive */
 @media (min-width: 641px) and (max-width: 1024px) {
   .employee-grid {
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+
+  .employee-card {
+    min-height: 190px;
+  }
+
+  .employee-table {
+    font-size: 13px;
+  }
+
+  .employee-table th,
+  .employee-table td {
+    padding: 12px 8px;
   }
 }
 

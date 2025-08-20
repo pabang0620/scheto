@@ -2,8 +2,9 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { leaveRequests } from '../../services/api';
+import { useNotification } from '../../contexts/NotificationContext';
 import TouchRipple from '../shared/TouchRipple';
+import HamburgerMenu from '../Common/HamburgerMenu';
 import './MobileHeader.css';
 
 const MobileHeader = () => {
@@ -11,22 +12,15 @@ const MobileHeader = () => {
   const [lastScrollY, setLastScrollY] = useState(0);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [pendingCount, setPendingCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   
   const { user, logout } = useContext(AuthContext);
   const { t, currentLanguage, changeLanguage } = useLanguage();
+  const { pendingLeaveCount } = useNotification();
   const navigate = useNavigate();
   const location = useLocation();
 
-  useEffect(() => {
-    // Fetch pending leave requests count for managers/admins
-    if (user?.role === 'admin' || user?.role === 'manager') {
-      fetchPendingCount();
-      const interval = setInterval(fetchPendingCount, 30000);
-      return () => clearInterval(interval);
-    }
-  }, [user]);
 
   useEffect(() => {
     // Handle scroll for hiding/showing header
@@ -52,14 +46,6 @@ const MobileHeader = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY]);
 
-  const fetchPendingCount = async () => {
-    try {
-      const response = await leaveRequests.getPendingApprovals();
-      setPendingCount(response.data?.length || 0);
-    } catch (error) {
-      console.error('Failed to fetch pending count:', error);
-    }
-  };
 
   const getPageTitle = () => {
     const path = location.pathname;
@@ -108,6 +94,17 @@ const MobileHeader = () => {
           <>
             {/* Left section */}
             <div className="header-left">
+              <TouchRipple
+                className="hamburger-button-mobile"
+                onClick={() => setMenuOpen(!menuOpen)}
+                color="rgba(0, 122, 255, 0.2)"
+              >
+                <div className="hamburger-icon">
+                  <span className="hamburger-line"></span>
+                  <span className="hamburger-line"></span>
+                  <span className="hamburger-line"></span>
+                </div>
+              </TouchRipple>
               <h1 className="page-title">{getPageTitle()}</h1>
             </div>
             
@@ -130,9 +127,9 @@ const MobileHeader = () => {
                   color="rgba(255, 59, 48, 0.2)"
                 >
                   <i className="fas fa-bell" />
-                  {pendingCount > 0 && (
+                  {pendingLeaveCount > 0 && (
                     <span className="notification-badge">
-                      {pendingCount > 99 ? '99+' : pendingCount}
+                      {pendingLeaveCount > 99 ? '99+' : pendingLeaveCount}
                     </span>
                   )}
                 </TouchRipple>
@@ -277,6 +274,11 @@ const MobileHeader = () => {
       
       {/* Safe area spacer */}
       <div className="header-safe-area" />
+      
+      <HamburgerMenu 
+        isOpen={menuOpen}
+        onClose={() => setMenuOpen(false)}
+      />
     </header>
   );
 };

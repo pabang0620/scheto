@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, AuthContext } from './contexts/AuthContext';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 import PrivateRoute from './components/Common/PrivateRoute';
 import RoleRoute from './components/Common/RoleRoute';
 import Header from './components/Common/Header';
@@ -18,13 +19,18 @@ import EmployeeForm from './components/Employee/EmployeeForm';
 import EmployeeAbilities from './components/Employee/EmployeeAbilities';
 import ScheduleCalendarDnD from './components/Schedule/ScheduleCalendarDnD';
 import AutoGenerate from './components/Schedule/AutoGenerate';
+import AutoGenerateV2 from './components/Schedule/AutoGenerateV2';
+import ScheduleAutoGenerator from './components/Schedule/ScheduleAutoGenerator';
 import LeaveRequest from './components/Leave/LeaveRequest';
 import CompanySettings from './components/Settings/CompanySettings';
+import NoticeManagement from './components/Notice/NoticeManagement';
+import Profile from './components/Profile/Profile';
 import { RouteTransition } from './components/shared/PageTransition';
 import './App.css';
 
 const AppLayout = () => {
   const { t } = useLanguage();
+  const { user } = useContext(AuthContext);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -33,15 +39,16 @@ const AppLayout = () => {
   };
 
   return (
-    <div className="app-layout">
-      {/* Desktop Header */}
-      <Header className="desktop-header" />
-      
-      {/* Mobile Header */}
-      <MobileHeader />
-      
-      <div className="app-content">
-        <Sidebar className="desktop-sidebar" />
+    <NotificationProvider user={user}>
+      <div className="app-layout">
+        {/* Desktop Header */}
+        <Header className="desktop-header" />
+        
+        {/* Mobile Header */}
+        <MobileHeader />
+        
+        <div className="app-content">
+          <Sidebar className="desktop-sidebar" />
         
         <main className="main-content">
           <RouteTransition onSwipeBack={handleSwipeBack} enableSwipeBack={true}>
@@ -77,6 +84,16 @@ const AppLayout = () => {
               <Route path="/schedules/new" element={<ScheduleCalendarDnD />} />
               <Route path="/schedules/auto-generate" element={
                 <RoleRoute requiredRole="manager">
+                  <ScheduleAutoGenerator />
+                </RoleRoute>
+              } />
+              <Route path="/schedules/auto-generate-v2" element={
+                <RoleRoute requiredRole="manager">
+                  <AutoGenerateV2 />
+                </RoleRoute>
+              } />
+              <Route path="/schedules/auto-generate-v1" element={
+                <RoleRoute requiredRole="manager">
                   <AutoGenerate />
                 </RoleRoute>
               } />
@@ -86,21 +103,18 @@ const AppLayout = () => {
               <Route path="/leave-requests/new" element={<LeaveRequest />} />
               
               {/* Profile & Settings */}
-              <Route path="/profile" element={
-                <div style={{ 
-                  padding: '2rem', 
-                  textAlign: 'center',
-                  background: 'var(--color-background)',
-                  minHeight: '100vh'
-                }}>
-                  <h1>{t('pages.profilePage')}</h1>
-                  <p>{t('pages.comingSoon')}</p>
-                </div>
-              } />
+              <Route path="/profile" element={<Profile />} />
               
               <Route path="/settings" element={
                 <RoleRoute requiredRole="admin">
                   <CompanySettings />
+                </RoleRoute>
+              } />
+              
+              {/* Notice Management */}
+              <Route path="/notices/manage" element={
+                <RoleRoute requiredRole="admin">
+                  <NoticeManagement />
                 </RoleRoute>
               } />
               
@@ -170,7 +184,8 @@ const AppLayout = () => {
           <FloatingActionButton />
         )}
       </div>
-    </div>
+      </div>
+    </NotificationProvider>
   );
 };
 

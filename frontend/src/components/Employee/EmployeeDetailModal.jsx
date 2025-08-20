@@ -33,6 +33,7 @@ const EmployeeDetailModal = ({ employeeId, isOpen, onClose }) => {
   
   // Loading and edit states
   const [loading, setLoading] = useState(false);
+  const [loadingSchedules, setLoadingSchedules] = useState(false);
   const [editingAbilities, setEditingAbilities] = useState(false);
   const [tempAbilities, setTempAbilities] = useState([]);
   
@@ -45,7 +46,7 @@ const EmployeeDetailModal = ({ employeeId, isOpen, onClose }) => {
   const [addingNote, setAddingNote] = useState(false);
 
   // Calendar state for schedule tab
-  const [scheduleView, setScheduleView] = useState('week'); // 'week' or 'month'
+  const [scheduleView, setScheduleView] = useState('month'); // 'list' or 'month'
   const [currentDate, setCurrentDate] = useState(new Date());
 
   // Animation states
@@ -79,10 +80,27 @@ const EmployeeDetailModal = ({ employeeId, isOpen, onClose }) => {
     if (isOpen && employeeId) {
       setIsVisible(true);
       fetchEmployeeData();
+      // Reset schedules when opening a different employee
+      setSchedules([]);
     } else {
       setIsVisible(false);
+      // Clear data when closing
+      setSchedules([]);
+      setNotes([]);
+      setAbilities([]);
     }
   }, [isOpen, employeeId]);
+
+  // Fetch schedules when date or view changes
+  useEffect(() => {
+    if (!isOpen || !employeeId || activeTab !== 'schedule') return;
+    
+    const timer = setTimeout(() => {
+      fetchSchedules();
+    }, 100); // Debounce to prevent multiple calls
+    
+    return () => clearTimeout(timer);
+  }, [currentDate, scheduleView, activeTab, employeeId, isOpen]);
 
   const handleTabChange = (tab) => {
     const currentIndex = tabs.indexOf(activeTab);
@@ -117,8 +135,7 @@ const EmployeeDetailModal = ({ employeeId, isOpen, onClose }) => {
         setNotes([]);
       }
       
-      // Fetch current week/month schedules
-      fetchSchedules();
+      // Don't fetch schedules here - it's handled by separate useEffect
       
     } catch (error) {
       console.error('Failed to fetch employee data:', error);
@@ -128,15 +145,49 @@ const EmployeeDetailModal = ({ employeeId, isOpen, onClose }) => {
   };
 
   const fetchSchedules = async () => {
+    // Prevent duplicate calls
+    if (loadingSchedules) return;
+    
     try {
+      setLoadingSchedules(true);
       const startDate = getScheduleStartDate();
       const endDate = getScheduleEndDate();
       
+      console.log('========== EMPLOYEE SCHEDULES DEBUG ==========');
+      console.log('[EmployeeDetailModal] fetchSchedules called');
+      console.log('[EmployeeDetailModal] Employee ID:', employeeId);
+      console.log('[EmployeeDetailModal] Date range:', startDate, 'to', endDate);
+      console.log('[EmployeeDetailModal] Calling getEmployeeSchedules...');
+      console.trace('[EmployeeDetailModal] Call stack');
+      
       const response = await getEmployeeSchedules(employeeId, startDate, endDate);
-      setSchedules(response.data || []);
+      console.log('Schedules response:', response.data);
+      console.log('Response type:', typeof response.data, 'Array:', Array.isArray(response.data));
+      
+      // Backend already filters by employeeId, so no need to filter again
+      // Just validate that we have the correct data
+      const scheduleData = Array.isArray(response.data) ? response.data : [];
+      
+      // Log for debugging - check if any schedules don't belong to this employee
+      const wrongEmployeeSchedules = scheduleData.filter(s => 
+        s.employeeId !== parseInt(employeeId)
+      );
+      
+      if (wrongEmployeeSchedules.length > 0) {
+        console.warn('Found schedules for other employees:', wrongEmployeeSchedules);
+        console.warn('This indicates a backend filtering issue that needs to be fixed');
+      }
+      
+      console.log('Setting schedules:', scheduleData);
+      console.log('Schedules count:', scheduleData.length);
+      console.log('First few schedules:', scheduleData.slice(0, 3));
+      console.log('===============================================');
+      setSchedules(scheduleData);
     } catch (error) {
       console.warn('Failed to fetch schedules:', error);
       setSchedules([]);
+    } finally {
+      setLoadingSchedules(false);
     }
   };
 
@@ -150,23 +201,15 @@ const EmployeeDetailModal = ({ employeeId, isOpen, onClose }) => {
 
   const getScheduleStartDate = () => {
     const date = new Date(currentDate);
-    if (scheduleView === 'week') {
-      const day = date.getDay();
-      date.setDate(date.getDate() - day);
-    } else {
-      date.setDate(1);
-    }
+    // Always get the first day of the current month
+    date.setDate(1);
     return date.toISOString().split('T')[0];
   };
 
   const getScheduleEndDate = () => {
     const date = new Date(currentDate);
-    if (scheduleView === 'week') {
-      const day = date.getDay();
-      date.setDate(date.getDate() - day + 6);
-    } else {
-      date.setMonth(date.getMonth() + 1, 0);
-    }
+    // Always get the last day of the current month
+    date.setMonth(date.getMonth() + 1, 0);
     return date.toISOString().split('T')[0];
   };
 
@@ -347,16 +390,84 @@ const EmployeeDetailModal = ({ employeeId, isOpen, onClose }) => {
     </div>
   );
 
+  const renderCalendarGrid = () => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - firstDay.getDay());
+    
+    const days = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Generate calendar days (6 weeks)
+    for (let i = 0; i < 42; i++) {
+      const date = new Date(startDate);
+      date.setDate(startDate.getDate() + i);
+      
+      const dateStr = date.toISOString().split('T')[0];
+      const daySchedules = schedules.filter(s => 
+        new Date(s.date).toISOString().split('T')[0] === dateStr
+      );
+      
+      const isCurrentMonth = date.getMonth() === month;
+      const isToday = date.getTime() === today.getTime();
+      
+      days.push({
+        date,
+        isCurrentMonth,
+        isToday,
+        schedules: daySchedules
+      });
+    }
+    
+    return (
+      <div className="calendar-grid">
+        <div className="calendar-header">
+          {['일', '월', '화', '수', '목', '금', '토'].map(day => (
+            <div key={day} className="calendar-day-header">{day}</div>
+          ))}
+        </div>
+        <div className="calendar-body">
+          {days.map((day, index) => (
+            <div 
+              key={index} 
+              className={`calendar-day ${!day.isCurrentMonth ? 'other-month' : ''} ${day.isToday ? 'today' : ''} ${day.schedules.length > 0 ? 'has-schedule' : ''}`}
+            >
+              <div className="day-number">{day.date.getDate()}</div>
+              {day.schedules.length > 0 && (
+                <div className="day-schedules">
+                  {day.schedules.slice(0, 2).map((schedule, idx) => (
+                    <div key={idx} className={`schedule-indicator ${schedule.shiftType || 'regular'}`}>
+                      <span className="schedule-time-mini">
+                        {schedule.startTime?.substring(0, 5)}
+                      </span>
+                    </div>
+                  ))}
+                  {day.schedules.length > 2 && (
+                    <div className="more-schedules">+{day.schedules.length - 2}</div>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   const renderScheduleTab = () => (
     <div className="tab-content schedule-tab">
       <div className="schedule-header">
         <div className="schedule-controls">
           <div className="view-controls">
             <button
-              className={`view-btn ${scheduleView === 'week' ? 'active' : ''}`}
-              onClick={() => setScheduleView('week')}
+              className={`view-btn ${scheduleView === 'list' ? 'active' : ''}`}
+              onClick={() => setScheduleView('list')}
             >
-              {t('schedule.week')}
+              {t('schedule.list')}
             </button>
             <button
               className={`view-btn ${scheduleView === 'month' ? 'active' : ''}`}
@@ -370,31 +481,20 @@ const EmployeeDetailModal = ({ employeeId, isOpen, onClose }) => {
               className="nav-btn"
               onClick={() => {
                 const newDate = new Date(currentDate);
-                if (scheduleView === 'week') {
-                  newDate.setDate(newDate.getDate() - 7);
-                } else {
-                  newDate.setMonth(newDate.getMonth() - 1);
-                }
+                newDate.setMonth(newDate.getMonth() - 1);
                 setCurrentDate(newDate);
               }}
             >
               <i className="fas fa-chevron-left"></i>
             </button>
             <span className="current-period">
-              {scheduleView === 'week' 
-                ? `${formatDate(getScheduleStartDate())} - ${formatDate(getScheduleEndDate())}`
-                : currentDate.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' })
-              }
+              {currentDate.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' })}
             </span>
             <button
               className="nav-btn"
               onClick={() => {
                 const newDate = new Date(currentDate);
-                if (scheduleView === 'week') {
-                  newDate.setDate(newDate.getDate() + 7);
-                } else {
-                  newDate.setMonth(newDate.getMonth() + 1);
-                }
+                newDate.setMonth(newDate.getMonth() + 1);
                 setCurrentDate(newDate);
               }}
             >
@@ -405,30 +505,34 @@ const EmployeeDetailModal = ({ employeeId, isOpen, onClose }) => {
       </div>
 
       <div className="schedule-calendar">
-        {schedules.length === 0 ? (
-          <div className="no-schedules empty-state">
-            <i className="fas fa-calendar-times"></i>
-            <p>{t('employee.noSchedulesMessage')}</p>
-          </div>
+        {scheduleView === 'month' ? (
+          renderCalendarGrid()
         ) : (
-          <div className="schedule-list">
-            {schedules.map((schedule) => (
-              <div key={schedule.id} className="schedule-item">
-                <div className="schedule-date">
-                  {formatDate(schedule.date)}
-                </div>
-                <div className="schedule-details">
-                  <div className="schedule-time">
-                    <i className="fas fa-clock"></i>
-                    {schedule.startTime} - {schedule.endTime}
+          schedules.length === 0 ? (
+            <div className="no-schedules empty-state">
+              <i className="fas fa-calendar-times"></i>
+              <p>{t('employee.noSchedulesMessage')}</p>
+            </div>
+          ) : (
+            <div className="schedule-list">
+              {schedules.map((schedule) => (
+                <div key={schedule.id} className="schedule-item">
+                  <div className="schedule-date">
+                    {formatDate(schedule.date)}
                   </div>
-                  <div className={`schedule-type ${schedule.shiftType || 'regular'}`}>
-                    {schedule.shiftType || 'Regular'}
+                  <div className="schedule-details">
+                    <div className="schedule-time">
+                      <i className="fas fa-clock"></i>
+                      {schedule.startTime} - {schedule.endTime}
+                    </div>
+                    <div className={`schedule-type ${schedule.shiftType || 'regular'}`}>
+                      {schedule.shiftType || 'Regular'}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )
         )}
       </div>
     </div>

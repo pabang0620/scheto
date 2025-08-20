@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { leaveRequests } from '../../services/api';
+import { useNotification } from '../../contexts/NotificationContext';
 import TouchRipple from '../shared/TouchRipple';
 import './MobileTabBar.css';
 
@@ -11,18 +11,10 @@ const MobileTabBar = () => {
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
   const { t } = useLanguage();
-  const [pendingCount, setPendingCount] = useState(0);
+  const { pendingLeaveCount } = useNotification();
   const [visible, setVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
 
-  useEffect(() => {
-    // Fetch pending leave requests count for managers/admins
-    if (user?.role === 'admin' || user?.role === 'manager') {
-      fetchPendingCount();
-      const interval = setInterval(fetchPendingCount, 30000);
-      return () => clearInterval(interval);
-    }
-  }, [user]);
 
   useEffect(() => {
     // Handle scroll for hiding/showing tab bar
@@ -47,14 +39,6 @@ const MobileTabBar = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY]);
 
-  const fetchPendingCount = async () => {
-    try {
-      const response = await leaveRequests.getPendingApprovals();
-      setPendingCount(response.data?.length || 0);
-    } catch (error) {
-      console.error('Failed to fetch pending count:', error);
-    }
-  };
 
   const getTabItems = () => {
     const baseItems = [
@@ -91,7 +75,7 @@ const MobileTabBar = () => {
       icon: 'fas fa-plane-departure',
       label: t('navigation.leave') || 'Leave',
       activePattern: /^\/leave-requests/,
-      badge: (user?.role === 'admin' || user?.role === 'manager') && pendingCount > 0 ? pendingCount : null
+      badge: (user?.role === 'admin' || user?.role === 'manager') && pendingLeaveCount > 0 ? pendingLeaveCount : null
     });
 
     baseItems.push({

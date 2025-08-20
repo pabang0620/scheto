@@ -1,9 +1,14 @@
 // 날짜 포맷 유틸리티 함수
 
 export const formatDate = (dateString, language = 'ko', options = {}) => {
-  if (!dateString) return '';
+  if (!dateString || dateString === 'null' || dateString === 'undefined') return '';
   
   const date = new Date(dateString);
+  
+  // Check if date is invalid
+  if (isNaN(date.getTime())) {
+    return '';
+  }
   
   // 기본 옵션
   const defaultOptions = {
@@ -83,8 +88,18 @@ export const formatDate = (dateString, language = 'ko', options = {}) => {
 
 // 날짜 차이 계산 (일 단위)
 export const calculateDaysDiff = (startDate, endDate, halfDay = false) => {
+  if (!startDate || !endDate || startDate === 'null' || endDate === 'null' || 
+      startDate === 'undefined' || endDate === 'undefined') {
+    return 0;
+  }
+  
   const start = new Date(startDate);
   const end = new Date(endDate);
+  
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    return 0;
+  }
+  
   const diffTime = Math.abs(end - start);
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
   
@@ -97,7 +112,11 @@ export const calculateDaysDiff = (startDate, endDate, halfDay = false) => {
 
 // 오늘 날짜인지 확인
 export const isToday = (dateString) => {
+  if (!dateString || dateString === 'null' || dateString === 'undefined') return false;
+  
   const date = new Date(dateString);
+  if (isNaN(date.getTime())) return false;
+  
   const today = new Date();
   
   return date.getFullYear() === today.getFullYear() &&
@@ -107,7 +126,11 @@ export const isToday = (dateString) => {
 
 // 날짜가 과거인지 확인
 export const isPastDate = (dateString) => {
+  if (!dateString || dateString === 'null' || dateString === 'undefined') return false;
+  
   const date = new Date(dateString);
+  if (isNaN(date.getTime())) return false;
+  
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   date.setHours(0, 0, 0, 0);
@@ -117,7 +140,11 @@ export const isPastDate = (dateString) => {
 
 // 날짜가 미래인지 확인
 export const isFutureDate = (dateString) => {
+  if (!dateString || dateString === 'null' || dateString === 'undefined') return false;
+  
   const date = new Date(dateString);
+  if (isNaN(date.getTime())) return false;
+  
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   date.setHours(0, 0, 0, 0);

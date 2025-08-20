@@ -205,10 +205,84 @@ const deleteEmployee = async (req, res) => {
   }
 };
 
+// Get employee schedules
+const getEmployeeSchedules = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { startDate, endDate } = req.query;
+
+    console.log('Getting schedules for employee:', id);
+    console.log('Date range:', startDate, 'to', endDate);
+
+    // Validate employee ID
+    const employeeId = parseInt(id);
+    if (isNaN(employeeId)) {
+      return res.status(400).json({ message: 'Invalid employee ID' });
+    }
+
+    // Check if employee exists
+    const employee = await prisma.employee.findUnique({
+      where: { id: employeeId }
+    });
+
+    if (!employee) {
+      return res.status(404).json({ message: 'Employee not found' });
+    }
+
+    // Build where condition
+    const whereCondition = {
+      employeeId: employeeId
+    };
+
+    // Add date range if provided
+    if (startDate && endDate) {
+      whereCondition.date = {
+        gte: new Date(startDate),
+        lte: new Date(endDate)
+      };
+    }
+
+    console.log('Where condition:', whereCondition);
+
+    const schedules = await prisma.schedule.findMany({
+      where: whereCondition,
+      include: {
+        employee: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            department: true,
+            position: true
+          }
+        }
+      },
+      orderBy: {
+        date: 'asc'
+      }
+    });
+
+    console.log(`Found ${schedules.length} schedules for employee ${id}`);
+    
+    // Double-check that all schedules belong to the requested employee
+    const validSchedules = schedules.filter(schedule => schedule.employeeId === employeeId);
+    
+    if (validSchedules.length !== schedules.length) {
+      console.warn(`Warning: Found ${schedules.length - validSchedules.length} schedules that don't belong to employee ${id}`);
+    }
+    
+    res.json(validSchedules);
+  } catch (error) {
+    console.error('Get employee schedules error:', error);
+    res.status(500).json({ message: 'Server error fetching employee schedules' });
+  }
+};
+
 module.exports = {
   getAllEmployees,
   getEmployeeById,
   createEmployee,
   updateEmployee,
-  deleteEmployee
+  deleteEmployee,
+  getEmployeeSchedules
 };

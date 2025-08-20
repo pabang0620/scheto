@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Employee Schedule Test</title>
+</head>
+<body>
+    <h1>Employee Schedule API Test</h1>
+    <button onclick="testEmployee(1)">Test Employee 1</button>
+    <button onclick="testEmployee(2)">Test Employee 2</button>
+    <button onclick="testEmployee(3)">Test Employee 3</button>
+    
+    <div id="result"></div>
+
+    <script>
+        const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjYsImlhdCI6MTc1NTY4MTYyMywiZXhwIjoxNzU2Mjg2NDIzfQ.GFPwzLjS4-WCL4cNUmBRrh_DI0dEonEgHeu4hFXYS9Y';
+        
+        async function testEmployee(id) {
+            const startDate = '2025-08-01';
+            const endDate = '2025-08-31';
+            
+            try {
+                const response = await fetch(`http://localhost:5000/api/employees/${id}/schedules?startDate=${startDate}&endDate=${endDate}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                document.getElementById('result').innerHTML = `
+                    <h2>Employee ${id} Schedules</h2>
+                    <p>Total schedules: ${data.length}</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+                
+                // Check if all schedules belong to the requested employee
+                const wrongSchedules = data.filter(s => s.employeeId !== id);
+                if (wrongSchedules.length > 0) {
+                    alert(`ERROR: Found ${wrongSchedules.length} schedules for other employees!`);
+                    console.error('Wrong schedules:', wrongSchedules);
+                } else {
+                    console.log(`✅ All ${data.length} schedules belong to employee ${id}`);
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('result').innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

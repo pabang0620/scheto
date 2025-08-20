@@ -15,8 +15,8 @@ router.use(authMiddleware);
 
 // @route   GET /api/company/settings
 // @desc    Get company settings
-// @access  Private (Admin only)
-router.get('/settings', roleMiddleware(['admin']), companyController.getCompanySettings);
+// @access  Private (All authenticated users)
+router.get('/settings', companyController.getCompanySettings);
 
 // @route   PUT /api/company/settings
 // @desc    Update company settings

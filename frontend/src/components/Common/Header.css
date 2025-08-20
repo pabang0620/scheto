@@ -25,6 +25,40 @@
   flex-shrink: 0;
 }
 
+/* Hamburger Menu Button */
+.hamburger-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: var(--spacing-sm);
+  border-radius: var(--border-radius-md);
+  transition: background-color var(--animation-fast) ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  gap: 3px;
+}
+
+.hamburger-button:hover {
+  background-color: var(--color-border-light);
+}
+
+.hamburger-line {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background-color: var(--color-text);
+  border-radius: 2px;
+  transition: all var(--animation-fast) ease;
+}
+
+.hamburger-button:hover .hamburger-line {
+  background-color: var(--color-primary);
+}
+
 .sidebar-toggle {
   background: none;
   border: none;
@@ -493,13 +527,22 @@
   }
 }
 
+/* Responsive hamburger menu visibility */
+@media (min-width: 1024px) {
+  /* Hide hamburger menu on desktop where sidebar is available */
+  .hamburger-button {
+    display: none;
+  }
+}
+
 /* Focus states for accessibility */
 .sidebar-toggle:focus-visible,
 .search-btn:focus-visible,
 .notification-btn:focus-visible,
 .quick-add-btn:focus-visible,
 .user-button:focus-visible,
-.dropdown-item:focus-visible {
+.dropdown-item:focus-visible,
+.hamburger-button:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }

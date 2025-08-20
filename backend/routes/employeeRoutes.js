@@ -42,4 +42,9 @@ router.put('/:id', [
 // @access  Private
 router.delete('/:id', employeeController.deleteEmployee);
 
+// @route   GET /api/employees/:id/schedules
+// @desc    Get employee schedules
+// @access  Private
+router.get('/:id/schedules', employeeController.getEmployeeSchedules);
+
 module.exports = router;

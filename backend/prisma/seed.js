@@ -2,20 +2,233 @@ const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
 
+async function seedEnhancedFeatures(employees, adminUser) {
+  console.log('Seeding enhanced features...');
+
+  // Check if shift patterns already exist
+  const existingPatterns = await prisma.shiftPattern.findMany();
+  if (existingPatterns.length === 0) {
+    // Create sample shift patterns
+    const shiftPatterns = await Promise.all([
+      prisma.shiftPattern.create({
+        data: {
+          name: 'Morning Shift',
+          description: 'Standard morning shift',
+          startTime: '09:00',
+          endTime: '17:00',
+          duration: 480, // 8 hours in minutes
+          breakDuration: 60, // 1 hour break
+          shiftType: 'morning',
+          industryType: 'office',
+          isTemplate: true,
+          color: '#007bff',
+          minStaffRequired: 2,
+          maxStaffRequired: 5,
+          requiredSkillLevel: 'junior',
+          allowedDepartments: ['IT', 'HR', 'Marketing'],
+          createdBy: adminUser.id,
+        },
+      }),
+      prisma.shiftPattern.create({
+        data: {
+          name: 'Evening Shift',
+          description: 'Evening shift for extended hours',
+          startTime: '17:00',
+          endTime: '23:00',
+          duration: 360, // 6 hours in minutes
+          breakDuration: 30, // 30 minute break
+          shiftType: 'evening',
+          industryType: 'office',
+          isTemplate: true,
+          color: '#28a745',
+          minStaffRequired: 1,
+          maxStaffRequired: 3,
+          requiredSkillLevel: 'intermediate',
+          allowedDepartments: ['IT'],
+          createdBy: adminUser.id,
+        },
+      }),
+    ]);
+    console.log('Created shift patterns');
+  }
+
+  // Check if schedule template already exists
+  const existingTemplates = await prisma.scheduleTemplate.findMany();
+  if (existingTemplates.length === 0) {
+    const scheduleTemplate = await prisma.scheduleTemplate.create({
+      data: {
+        name: 'Standard Office Schedule',
+        description: 'Standard 5-day office schedule with morning and evening coverage',
+        industryType: 'office',
+        templateType: 'weekly',
+        workDaysPattern: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+        rotationPeriod: 7,
+        minStaffPerShift: 2,
+        maxStaffPerShift: 5,
+        coverageRequirements: {
+          'morning': { minStaff: 3, maxStaff: 5 },
+          'evening': { minStaff: 1, maxStaff: 2 }
+        },
+        createdBy: adminUser.id,
+      },
+    });
+    console.log('Created schedule template');
+  }
+
+  // Create employee constraints for employees that don't have them
+  const employeesWithoutConstraints = [];
+  for (const employee of employees) {
+    const existingConstraints = await prisma.employeeConstraints.findUnique({
+      where: { employeeId: employee.id }
+    });
+    if (!existingConstraints) {
+      employeesWithoutConstraints.push(employee);
+    }
+  }
+
+  if (employeesWithoutConstraints.length > 0) {
+    const constraintsData = employeesWithoutConstraints.map((employee, index) => {
+      const constraints = [
+        {
+          employeeId: employee.id,
+          unavailableTimeSlots: [{ day: 'friday', startTime: '18:00', endTime: '23:59' }],
+          preferredTimeSlots: [{ day: 'monday', startTime: '09:00', endTime: '17:00' }],
+          preferredShiftTypes: ['morning'],
+          canWorkWeekends: false,
+          canWorkNightShifts: false,
+          maxShiftsPerWeek: 5,
+          maxOvertimeHours: 5,
+          hasReliableTransport: true,
+        },
+        {
+          employeeId: employee.id,
+          preferredShiftTypes: ['morning', 'afternoon'],
+          canWorkWeekends: true,
+          canWorkNightShifts: false,
+          maxShiftsPerWeek: 5,
+          maxOvertimeHours: 8,
+          hasReliableTransport: true,
+        },
+        {
+          employeeId: employee.id,
+          preferredShiftTypes: ['morning', 'evening'],
+          canWorkWeekends: true,
+          canWorkNightShifts: true,
+          maxShiftsPerWeek: 6,
+          maxOvertimeHours: 12,
+          hasReliableTransport: true,
+        },
+        {
+          employeeId: employee.id,
+          preferredShiftTypes: ['afternoon', 'evening'],
+          avoidShiftTypes: ['morning'],
+          canWorkWeekends: false,
+          canWorkNightShifts: false,
+          maxShiftsPerWeek: 4,
+          maxOvertimeHours: 4,
+          hasReliableTransport: true,
+        }
+      ];
+      return constraints[index % constraints.length];
+    });
+
+    await Promise.all(
+      constraintsData.map(data => prisma.employeeConstraints.create({ data }))
+    );
+    console.log('Created employee constraints for', employeesWithoutConstraints.length, 'employees');
+  }
+
+  // Create sample certifications for employees that don't have them
+  const employeesWithoutCertifications = [];
+  for (const employee of employees) {
+    const existingCertifications = await prisma.employeeCertification.findMany({
+      where: { employeeId: employee.id }
+    });
+    if (existingCertifications.length === 0) {
+      employeesWithoutCertifications.push(employee);
+    }
+  }
+
+  if (employeesWithoutCertifications.length > 0) {
+    const certifications = [
+      {
+        certificationName: 'AWS Certified Developer',
+        certificationBody: 'Amazon Web Services',
+        issueDate: new Date('2023-06-15'),
+        expiryDate: new Date('2026-06-15'),
+        certificateNumber: 'AWS-DEV-001',
+      },
+      {
+        certificationName: 'SHRM-CP',
+        certificationBody: 'Society for Human Resource Management',
+        issueDate: new Date('2023-03-20'),
+        expiryDate: new Date('2026-03-20'),
+        certificateNumber: 'SHRM-001',
+      },
+      {
+        certificationName: 'PMP',
+        certificationBody: 'Project Management Institute',
+        issueDate: new Date('2022-08-10'),
+        expiryDate: new Date('2025-08-10'),
+        certificateNumber: 'PMP-001',
+      },
+      {
+        certificationName: 'Google Analytics',
+        certificationBody: 'Google',
+        issueDate: new Date('2023-01-15'),
+        expiryDate: new Date('2024-01-15'),
+        certificateNumber: 'GA-001',
+      }
+    ];
+
+    for (let i = 0; i < Math.min(employeesWithoutCertifications.length, certifications.length); i++) {
+      await prisma.employeeCertification.create({
+        data: {
+          employeeId: employeesWithoutCertifications[i].id,
+          ...certifications[i],
+          isActive: true,
+          verificationStatus: 'verified',
+        }
+      });
+    }
+    console.log('Created certifications for', Math.min(employeesWithoutCertifications.length, certifications.length), 'employees');
+  }
+
+  console.log('Enhanced features seeding completed!');
+}
+
 async function main() {
   console.log('Start seeding...');
 
-  // Create admin user
-  const adminUser = await prisma.user.create({
-    data: {
-      email: 'admin@schedule.com',
-      name: 'Admin User',
-      password: 'admin123',
-      role: 'admin',
-    },
+  // Create or find admin user
+  let adminUser = await prisma.user.findUnique({
+    where: { email: 'admin@schedule.com' }
   });
 
-  console.log('Created admin user:', adminUser);
+  if (!adminUser) {
+    adminUser = await prisma.user.create({
+      data: {
+        email: 'admin@schedule.com',
+        name: 'Admin User',
+        password: 'admin123',
+        role: 'admin',
+      },
+    });
+    console.log('Created admin user:', adminUser);
+  } else {
+    console.log('Admin user already exists');
+  }
+
+  // Check if seed data already exists
+  const existingEmployees = await prisma.employee.findMany();
+  if (existingEmployees.length > 0) {
+    console.log('Seed data already exists, skipping basic data creation');
+    console.log('Adding only new enhanced features data...');
+    
+    // Only add new features for existing employees
+    await seedEnhancedFeatures(existingEmployees, adminUser);
+    return;
+  }
 
   // Create sample employee users
   const employeeUsers = await Promise.all([
@@ -101,42 +314,54 @@ async function main() {
 
   console.log('Created employee profiles');
 
-  // Create abilities for each employee
+  // Create abilities for each employee using correct schema fields
   await Promise.all([
     prisma.ability.create({
       data: {
         employeeId: employees[0].id,
-        skill: 8,
-        leadership: 6,
-        speed: 7,
-        teamwork: 9,
+        experience: 3,
+        workSkill: 4,
+        teamChemistry: 4,
+        customerService: 3,
+        flexibility: 4,
+        totalScore: 18,
+        rank: 'B',
       },
     }),
     prisma.ability.create({
       data: {
         employeeId: employees[1].id,
-        skill: 7,
-        leadership: 8,
-        speed: 6,
-        teamwork: 9,
+        experience: 2,
+        workSkill: 4,
+        teamChemistry: 5,
+        customerService: 4,
+        flexibility: 3,
+        totalScore: 18,
+        rank: 'B',
       },
     }),
     prisma.ability.create({
       data: {
         employeeId: employees[2].id,
-        skill: 9,
-        leadership: 10,
-        speed: 8,
-        teamwork: 8,
+        experience: 5,
+        workSkill: 5,
+        teamChemistry: 4,
+        customerService: 3,
+        flexibility: 4,
+        totalScore: 21,
+        rank: 'A',
       },
     }),
     prisma.ability.create({
       data: {
         employeeId: employees[3].id,
-        skill: 7,
-        leadership: 7,
-        speed: 8,
-        teamwork: 8,
+        experience: 2,
+        workSkill: 3,
+        teamChemistry: 4,
+        customerService: 5,
+        flexibility: 4,
+        totalScore: 18,
+        rank: 'B',
       },
     }),
   ]);
@@ -219,6 +444,9 @@ async function main() {
   });
 
   console.log('Created sample schedules');
+
+  // Add enhanced features data
+  await seedEnhancedFeatures(employees, adminUser);
 
   console.log('Seeding finished.');
 }

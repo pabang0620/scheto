@@ -1,35 +1,18 @@
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { leaveRequests } from '../../services/api';
+import { useNotification } from '../../contexts/NotificationContext';
+import HamburgerMenu from './HamburgerMenu';
 import './Header.css';
 
 const Header = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [pendingCount, setPendingCount] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
   const { user, logout } = useContext(AuthContext);
   const { t, currentLanguage, changeLanguage } = useLanguage();
+  const { pendingLeaveCount } = useNotification();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    // Fetch pending leave requests count for managers/admins
-    if (user?.role === 'admin' || user?.role === 'manager') {
-      fetchPendingCount();
-      // Refresh count every 30 seconds
-      const interval = setInterval(fetchPendingCount, 30000);
-      return () => clearInterval(interval);
-    }
-  }, [user]);
-
-  const fetchPendingCount = async () => {
-    try {
-      const response = await leaveRequests.getPendingApprovals();
-      setPendingCount(response.data?.length || 0);
-    } catch (error) {
-      console.error('Failed to fetch pending count:', error);
-    }
-  };
 
   const handleLogout = () => {
     logout();
@@ -60,13 +43,24 @@ const Header = () => {
   };
 
   return (
-    <header className="app-header">
-      <div className="header-left">
-        <div className="logo-section">
-          <h1 className="app-title">{t('header.appTitle')}</h1>
-          <span className="app-subtitle">{t('header.dashboard')}</span>
+    <>
+      <header className="app-header">
+        <div className="header-left">
+          <button 
+            className="hamburger-button"
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-label="Toggle menu"
+          >
+            <span className="hamburger-line"></span>
+            <span className="hamburger-line"></span>
+            <span className="hamburger-line"></span>
+          </button>
+          
+          <div className="logo-section">
+            <h1 className="app-title">{t('header.appTitle')}</h1>
+            <span className="app-subtitle">{t('header.dashboard')}</span>
+          </div>
         </div>
-      </div>
 
       <div className="header-right">
         <div className="header-actions">
@@ -75,11 +69,11 @@ const Header = () => {
               className="notification-btn" 
               aria-label={t('header.notifications')}
               onClick={() => navigate('/leave-requests')}
-              title={`${pendingCount} pending leave requests`}
+              title={`${pendingLeaveCount} pending leave requests`}
             >
               <span className="notification-icon"><i className="fas fa-bell"></i></span>
-              {pendingCount > 0 && (
-                <span className="notification-badge">{pendingCount > 99 ? '99+' : pendingCount}</span>
+              {pendingLeaveCount > 0 && (
+                <span className="notification-badge">{pendingLeaveCount > 99 ? '99+' : pendingLeaveCount}</span>
               )}
             </button>
           )}
@@ -192,7 +186,13 @@ const Header = () => {
           onClick={() => setDropdownOpen(false)}
         ></div>
       )}
-    </header>
+      </header>
+      
+      <HamburgerMenu 
+        isOpen={menuOpen}
+        onClose={() => setMenuOpen(false)}
+      />
+    </>
   );
 };
 

@@ -129,6 +129,32 @@ const getLeavesByEmployee = async (req, res) => {
   }
 };
 
+// @desc    Get my leave requests
+// @route   GET /api/leaves/my-requests
+// @access  Private
+const getMyLeaves = async (req, res) => {
+  try {
+    // Get employee data for the current user
+    const employee = await prisma.employee.findFirst({
+      where: { userId: req.userId }
+    });
+
+    if (!employee) {
+      return res.json({ data: [] });
+    }
+
+    const leaves = await prisma.leave.findMany({
+      where: { employeeId: employee.id },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.json({ data: leaves });
+  } catch (error) {
+    console.error('Get my leaves error:', error);
+    res.status(500).json({ message: 'Server error getting leave requests' });
+  }
+};
+
 // @desc    Create new leave request
 // @route   POST /api/leaves
 // @access  Private
@@ -438,6 +464,7 @@ module.exports = {
   getLeaveById,
   getPendingLeaves,
   getLeavesByEmployee,
+  getMyLeaves,
   createLeave,
   updateLeave,
   deleteLeave,

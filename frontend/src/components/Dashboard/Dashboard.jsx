@@ -9,7 +9,11 @@ import {
   users,
   leaveRequests,
   getEmployees,
-  getEmployeeAbility
+  getEmployeeAbility,
+  getDashboardAlerts,
+  getNotices,
+  markNoticeAsRead,
+  getUnreadCount
 } from '../../services/api';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { formatDate, isToday, isFutureDate } from '../../utils/dateFormatter';
@@ -25,6 +29,9 @@ const Dashboard = () => {
     upcomingLeaves: [],
     loading: false
   });
+  const [alerts, setAlerts] = useState([]);
+  const [notices, setNotices] = useState([]);
+  const [unreadNoticesCount, setUnreadNoticesCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [animatedStats, setAnimatedStats] = useState({});
@@ -32,50 +39,13 @@ const Dashboard = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
 
-  // Animated counter hook
-  const useAnimatedCounter = (end, duration = 2000, delay = 0) => {
-    const [count, setCount] = useState(0);
-    const [shouldStart, setShouldStart] = useState(false);
-
-    useEffect(() => {
-      if (!shouldStart) return;
-      
-      const timer = setTimeout(() => {
-        let start = 0;
-        const increment = end / (duration / 50);
-        const counter = setInterval(() => {
-          start += increment;
-          if (start >= end) {
-            setCount(end);
-            clearInterval(counter);
-          } else {
-            setCount(Math.floor(start));
-          }
-        }, 50);
-        return () => clearInterval(counter);
-      }, delay);
-      
-      return () => clearTimeout(timer);
-    }, [end, duration, delay, shouldStart]);
-
-    const startAnimation = () => setShouldStart(true);
-    return [count, startAnimation];
-  };
-
-  const [totalEmployeesCount, startEmployeesAnimation] = useAnimatedCounter(stats?.totalEmployees || 0);
-  const [schedulesCount, startSchedulesAnimation] = useAnimatedCounter(stats?.schedulesThisWeek || 0);
-  const [pendingLeavesCount, startLeavesAnimation] = useAnimatedCounter(stats?.pendingLeaves || 0);
-  const [upcomingShiftsCount, startShiftsAnimation] = useAnimatedCounter(stats?.upcomingShifts || 0);
 
   useEffect(() => {
     fetchDashboardData();
     fetchLeaveData();
-    // Auto refresh every 30 seconds
-    const interval = setInterval(() => {
-      fetchDashboardData(true);
-      fetchLeaveData();
-    }, 30000);
-    return () => clearInterval(interval);
+    fetchAlertsAndNotices();
+    // Removed auto-refresh - NotificationContext handles periodic updates
+    // Dashboard will only refresh when user navigates or manually refreshes
   }, [user]);
 
   const fetchDashboardData = async (isRefresh = false) => {
@@ -93,14 +63,6 @@ const Dashboard = () => {
         const newStats = statsResponse.data || {};
         setStats(newStats);
         setRecentSchedules(Array.isArray(schedulesResponse.data) ? schedulesResponse.data : []);
-        
-        // Start animations after data is loaded
-        setTimeout(() => {
-          startEmployeesAnimation();
-          setTimeout(() => startSchedulesAnimation(), 200);
-          setTimeout(() => startLeavesAnimation(), 400);
-          setTimeout(() => startShiftsAnimation(), 600);
-        }, 300);
         
         // Fetch rank distribution for admin/manager
         await fetchRankDistribution();
@@ -245,6 +207,41 @@ const Dashboard = () => {
     }
   };
 
+  const fetchAlertsAndNotices = async () => {
+    try {
+      // Fetch alerts and notices in parallel
+      const [alertsResponse, noticesResponse, unreadResponse] = await Promise.all([
+        getDashboardAlerts(),
+        getNotices(),
+        getUnreadCount()
+      ]);
+
+      setAlerts(Array.isArray(alertsResponse.data) ? alertsResponse.data : []);
+      setNotices(Array.isArray(noticesResponse.data) ? noticesResponse.data : []);
+      setUnreadNoticesCount(unreadResponse.data?.count || 0);
+    } catch (error) {
+      console.error('Failed to fetch alerts and notices:', error);
+      // Set empty arrays if fetch fails
+      setAlerts([]);
+      setNotices([]);
+      setUnreadNoticesCount(0);
+    }
+  };
+
+  const handleMarkNoticeAsRead = async (noticeId) => {
+    try {
+      await markNoticeAsRead(noticeId);
+      // Update local state
+      setNotices(prev => prev.map(notice => 
+        notice.id === noticeId ? { ...notice, isRead: true } : notice
+      ));
+      // Update unread count
+      setUnreadNoticesCount(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('Failed to mark notice as read:', error);
+    }
+  };
+
   const quickActions = [
     {
       icon: 'fa-calendar-plus',
@@ -312,22 +309,258 @@ const Dashboard = () => {
     });
   };
 
-  const getShiftColor = (shift) => {
-    switch (shift?.toLowerCase()) {
+  const getShiftColor = (shiftType) => {
+    switch (shiftType?.toLowerCase()) {
       case 'morning': return { bg: '#fef3c7', color: '#f59e0b', icon: 'fa-sun' };
       case 'afternoon': return { bg: '#dbeafe', color: '#3b82f6', icon: 'fa-cloud-sun' };
       case 'evening': return { bg: '#e9d5ff', color: '#8b5cf6', icon: 'fa-cloud-moon' };
       case 'night': return { bg: '#e0e7ff', color: '#6366f1', icon: 'fa-moon' };
+      case 'regular': return { bg: '#e6f4ea', color: '#34a853', icon: 'fa-briefcase' };
       default: return { bg: '#f3f4f6', color: '#6b7280', icon: 'fa-clock' };
     }
   };
 
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 6) return '🌙 좋은 새벽입니다';
-    if (hour < 12) return '☀️ 좋은 아침입니다';
-    if (hour < 18) return '🌤️ 좋은 오후입니다';
-    return '🌆 좋은 저녁입니다';
+  const QuickStats = ({ stats, userRole, onStatClick }) => {
+    const statItems = [
+      {
+        id: 'employees',
+        icon: 'fa-users',
+        value: stats.totalEmployees || 0,
+        label: '직원',
+        path: '/employees',
+        bgColor: '#e8f5e9',
+        iconColor: '#4caf50'
+      },
+      {
+        id: 'schedules',
+        icon: 'fa-calendar-check',
+        value: `${stats.schedulesThisWeek || 0}일`,
+        label: '운영',
+        path: '/schedules',
+        bgColor: '#e3f2fd',
+        iconColor: '#2196f3'
+      },
+      {
+        id: 'leaves',
+        icon: 'fa-plane-departure',
+        value: stats.pendingLeaves || 0,
+        label: '대기중',
+        path: '/leave-requests',
+        bgColor: stats.pendingLeaves > 0 ? '#fff3e0' : '#f5f5f5',
+        iconColor: stats.pendingLeaves > 0 ? '#ff9800' : '#9e9e9e'
+      },
+      {
+        id: 'shifts',
+        icon: 'fa-clock',
+        value: stats.upcomingShifts || 0,
+        label: '예정',
+        path: '/schedules',
+        bgColor: '#f3e5f5',
+        iconColor: '#9c27b0'
+      }
+    ];
+
+    return (
+      <motion.div 
+        className="quick-stats-container"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+      >
+        <div className="quick-stats-scroll">
+          {statItems.map((stat, index) => (
+            <motion.div
+              key={stat.id}
+              className="quick-stat-pill"
+              onClick={() => onStatClick(stat.path)}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.1 * index }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              style={{ 
+                backgroundColor: stat.bgColor,
+                borderColor: stat.iconColor + '30'
+              }}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === 'Enter' && onStatClick(stat.path)}
+            >
+              <i className={`fas ${stat.icon} stat-icon`} style={{ color: stat.iconColor }}></i>
+              <span className="stat-value">{stat.value}</span>
+              <span className="stat-label">{stat.label}</span>
+            </motion.div>
+          ))}
+        </div>
+      </motion.div>
+    );
+  };
+
+  const AlertCenter = () => {
+    const getAlertTypeStyle = (type) => {
+      switch (type?.toLowerCase()) {
+        case 'critical':
+          return { 
+            bg: '#fee2e2', 
+            color: '#dc2626', 
+            border: '#fca5a5',
+            icon: 'fa-exclamation-triangle'
+          };
+        case 'warning':
+          return { 
+            bg: '#fef3c7', 
+            color: '#d97706', 
+            border: '#fcd34d',
+            icon: 'fa-exclamation-circle'
+          };
+        case 'info':
+          return { 
+            bg: '#dbeafe', 
+            color: '#2563eb', 
+            border: '#93c5fd',
+            icon: 'fa-info-circle'
+          };
+        default:
+          return { 
+            bg: '#f3f4f6', 
+            color: '#6b7280', 
+            border: '#d1d5db',
+            icon: 'fa-bell'
+          };
+      }
+    };
+
+    return (
+      <motion.div 
+        className="alert-center"
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+      >
+        <div className="widget-header">
+          <h3 className="widget-title">
+            <i className="fas fa-exclamation-triangle"></i>
+            {t('dashboard.alerts')}
+          </h3>
+          {alerts.length > 3 && (
+            <span className="alert-count-badge">{alerts.length}</span>
+          )}
+        </div>
+        
+        <div className="alerts-list">
+          {alerts.length > 0 ? (
+            alerts.slice(0, 3).map((alert, index) => {
+              const alertStyle = getAlertTypeStyle(alert.type);
+              return (
+                <motion.div 
+                  key={`${alert.type}-${index}`}
+                  className={`alert-item ${alert.type}`}
+                  style={{ 
+                    background: alertStyle.bg,
+                    borderColor: alertStyle.border,
+                    color: alertStyle.color
+                  }}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1 * index }}
+                  whileHover={{ scale: 1.02, x: 5 }}
+                  onClick={() => alert.action?.url && navigate(alert.action.url)}
+                >
+                  <div className="alert-icon">
+                    <i className={`fas ${alertStyle.icon}`}></i>
+                  </div>
+                  <div className="alert-content">
+                    <div className="alert-title">{alert.title}</div>
+                    <div className="alert-message">{alert.message}</div>
+                    <div className="alert-timestamp">
+                      {new Date(alert.timestamp).toLocaleString('ko-KR', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })
+          ) : (
+            <div className="no-alerts">
+              <i className="fas fa-check-circle"></i>
+              <span>{t('dashboard.noAlerts')}</span>
+            </div>
+          )}
+        </div>
+      </motion.div>
+    );
+  };
+
+  const NoticeBoard = () => {
+    return (
+      <motion.div 
+        className="notice-board"
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.4 }}
+      >
+        <div className="widget-header">
+          <h3 className="widget-title">
+            <i className="fas fa-bullhorn"></i>
+            {t('dashboard.notices')}
+          </h3>
+          <div className="notice-actions">
+            {unreadNoticesCount > 0 && (
+              <span className="unread-count-badge">{unreadNoticesCount}</span>
+            )}
+            <motion.button 
+              className="view-all-btn"
+              onClick={() => navigate('/notices')}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              {t('common.viewAll')} <i className="fas fa-arrow-right"></i>
+            </motion.button>
+          </div>
+        </div>
+        
+        <div className="notices-list">
+          {notices.length > 0 ? (
+            notices.slice(0, 4).map((notice, index) => (
+              <motion.div 
+                key={notice.id}
+                className={`notice-item ${notice.isRead ? 'read' : 'unread'}`}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1 * index }}
+                whileHover={{ scale: 1.02, x: 5 }}
+                onClick={() => !notice.isRead && handleMarkNoticeAsRead(notice.id)}
+              >
+                <div className="notice-content">
+                  <div className="notice-title">{notice.title}</div>
+                  <div className="notice-message">{notice.message}</div>
+                  <div className="notice-meta">
+                    <span className="notice-author">{notice.author}</span>
+                    <span className="notice-date">
+                      {new Date(notice.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+                {!notice.isRead && (
+                  <div className="notice-status">
+                    <div className="unread-indicator"></div>
+                  </div>
+                )}
+              </motion.div>
+            ))
+          ) : (
+            <div className="no-notices">
+              <i className="fas fa-clipboard"></i>
+              <span>{t('dashboard.noNotices')}</span>
+            </div>
+          )}
+        </div>
+      </motion.div>
+    );
   };
 
   const getLeaveTypeIcon = (leaveType) => {
@@ -558,245 +791,24 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Welcome Section */}
-      <motion.div 
-        className="welcome-section"
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-      >
-        <motion.div 
-          className="welcome-content"
-          initial={{ opacity: 0, x: -30 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-        >
-          <motion.h1 
-            className="welcome-greeting"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-          >
-            {getGreeting()}
-          </motion.h1>
-          <motion.h2 
-            className="welcome-name"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-          >
-            {user?.name}님
-          </motion.h2>
-          <motion.p 
-            className="welcome-subtitle"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.5 }}
-          >
-            {user?.role === 'admin' || user?.role === 'manager' 
-              ? t('dashboard.scheduleOverview')
-              : '오늘도 좋은 하루 되세요!'}
-          </motion.p>
-        </motion.div>
-        <motion.div 
-          className="welcome-date"
-          initial={{ opacity: 0, x: 30 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-        >
-          <motion.div 
-            className="date-card"
-            initial={{ scale: 0.8, rotate: -10 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ type: "spring", stiffness: 200, delay: 0.4 }}
-          >
-            <span className="date-day">{new Date().getDate()}</span>
-            <span className="date-month">
-              {new Date().toLocaleDateString('ko-KR', { month: 'long' })}
-            </span>
-            <span className="date-weekday">
-              {new Date().toLocaleDateString('ko-KR', { weekday: 'long' })}
-            </span>
-          </motion.div>
-        </motion.div>
-      </motion.div>
+      {/* Alert Center and Notice Board */}
+      <div className="dashboard-widgets-grid">
+        <AlertCenter />
+        <NoticeBoard />
+      </div>
 
-      {/* Stats Cards - Admin/Manager View */}
+      {/* QuickStats - Admin/Manager View */}
       {(user?.role === 'admin' || user?.role === 'manager') && stats && (
-        <motion.div 
-          className="stats-grid"
-          initial="hidden"
-          animate="visible"
-          variants={{
-            hidden: { opacity: 0 },
-            visible: {
-              opacity: 1,
-              transition: {
-                staggerChildren: 0.15,
-                delayChildren: 0.6
-              }
-            }
+        <QuickStats 
+          stats={{
+            totalEmployees: stats.totalEmployees || 0,
+            schedulesThisWeek: stats.schedulesThisWeek || 0,
+            pendingLeaves: stats.pendingLeaves || 0,
+            upcomingShifts: stats.upcomingShifts || 0
           }}
-        >
-          <motion.div 
-            className="stat-card" 
-            onClick={() => navigate('/employees')}
-            variants={{
-              hidden: { y: 50, opacity: 0, scale: 0.9 },
-              visible: { y: 0, opacity: 1, scale: 1 }
-            }}
-            whileHover={{ scale: 1.02, y: -5 }}
-            whileTap={{ scale: 0.98 }}
-            transition={{ type: "spring", stiffness: 200 }}
-          >
-            <motion.div 
-              className="stat-icon" 
-              style={{ background: 'rgba(70, 103, 222, 0.1)', color: '#4667de' }}
-              initial={{ rotate: -180, scale: 0 }}
-              animate={{ rotate: 0, scale: 1 }}
-              transition={{ type: "spring", stiffness: 200, delay: 0.8 }}
-            >
-              <i className="fas fa-users"></i>
-            </motion.div>
-            <div className="stat-content">
-              <motion.span 
-                className="stat-value"
-                key={totalEmployeesCount}
-              >
-                {totalEmployeesCount}
-              </motion.span>
-              <span className="stat-label">{t('dashboard.totalEmployees')}</span>
-            </div>
-            <motion.div 
-              className="stat-trend up"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 1.2 }}
-            >
-              <i className="fas fa-arrow-up"></i>
-              <span>+2 이번 달</span>
-            </motion.div>
-          </motion.div>
-
-          <motion.div 
-            className="stat-card" 
-            onClick={() => navigate('/schedules')}
-            variants={{
-              hidden: { y: 50, opacity: 0, scale: 0.9 },
-              visible: { y: 0, opacity: 1, scale: 1 }
-            }}
-            whileHover={{ scale: 1.02, y: -5 }}
-            whileTap={{ scale: 0.98 }}
-            transition={{ type: "spring", stiffness: 200 }}
-          >
-            <motion.div 
-              className="stat-icon" 
-              style={{ background: 'rgba(34, 195, 94, 0.1)', color: '#22c55e' }}
-              initial={{ rotate: -180, scale: 0 }}
-              animate={{ rotate: 0, scale: 1 }}
-              transition={{ type: "spring", stiffness: 200, delay: 0.95 }}
-            >
-              <i className="fas fa-calendar-check"></i>
-            </motion.div>
-            <div className="stat-content">
-              <motion.span 
-                className="stat-value"
-                key={schedulesCount}
-              >
-                {schedulesCount}일
-              </motion.span>
-              <span className="stat-label">이번 주 운영 일수</span>
-            </div>
-            <motion.div 
-              className="stat-trend"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 1.35 }}
-            >
-              <i className="fas fa-info-circle"></i>
-              <span>스케줄 운영일</span>
-            </motion.div>
-          </motion.div>
-
-          <motion.div 
-            className="stat-card" 
-            onClick={() => navigate('/leave-requests')}
-            variants={{
-              hidden: { y: 50, opacity: 0, scale: 0.9 },
-              visible: { y: 0, opacity: 1, scale: 1 }
-            }}
-            whileHover={{ scale: 1.02, y: -5 }}
-            whileTap={{ scale: 0.98 }}
-            transition={{ type: "spring", stiffness: 200 }}
-          >
-            <motion.div 
-              className="stat-icon" 
-              style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}
-              initial={{ rotate: -180, scale: 0 }}
-              animate={{ rotate: 0, scale: 1 }}
-              transition={{ type: "spring", stiffness: 200, delay: 1.1 }}
-            >
-              <i className="fas fa-plane-departure"></i>
-            </motion.div>
-            <div className="stat-content">
-              <motion.span 
-                className="stat-value"
-                key={pendingLeavesCount}
-              >
-                {pendingLeavesCount}
-              </motion.span>
-              <span className="stat-label">{t('dashboard.pendingLeaveRequests')}</span>
-            </div>
-            {stats.pendingLeaves > 0 && (
-              <motion.div 
-                className="stat-badge"
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: "spring", stiffness: 300, delay: 1.5 }}
-              >
-                처리 필요
-              </motion.div>
-            )}
-          </motion.div>
-
-          <motion.div 
-            className="stat-card"
-            variants={{
-              hidden: { y: 50, opacity: 0, scale: 0.9 },
-              visible: { y: 0, opacity: 1, scale: 1 }
-            }}
-            whileHover={{ scale: 1.02, y: -5 }}
-            whileTap={{ scale: 0.98 }}
-            transition={{ type: "spring", stiffness: 200 }}
-          >
-            <motion.div 
-              className="stat-icon" 
-              style={{ background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6' }}
-              initial={{ rotate: -180, scale: 0 }}
-              animate={{ rotate: 0, scale: 1 }}
-              transition={{ type: "spring", stiffness: 200, delay: 1.25 }}
-            >
-              <i className="fas fa-clock"></i>
-            </motion.div>
-            <div className="stat-content">
-              <motion.span 
-                className="stat-value"
-                key={upcomingShiftsCount}
-              >
-                {upcomingShiftsCount}
-              </motion.span>
-              <span className="stat-label">{t('dashboard.upcomingShifts')}</span>
-            </div>
-            <motion.div 
-              className="stat-subtitle"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1.65 }}
-            >
-              이번 주
-            </motion.div>
-          </motion.div>
-        </motion.div>
+          userRole={user?.role}
+          onStatClick={(path) => navigate(path)}
+        />
       )}
 
       {/* Team Rank Distribution - Admin/Manager View */}
@@ -804,7 +816,7 @@ const Dashboard = () => {
         <div className="rank-distribution-section">
           <div className="section-header">
             <h3 className="section-title">
-              <i className="fas fa-chart-pie"></i> Team Rank Distribution
+              <i className="fas fa-chart-pie"></i> {t('dashboard.teamRankDistribution')}
             </h3>
           </div>
           
@@ -1106,7 +1118,7 @@ const Dashboard = () => {
             }}
           >
             {recentSchedules.slice(0, 5).map((schedule, index) => {
-              const shiftStyle = getShiftColor(schedule.shift);
+              const shiftStyle = getShiftColor(schedule.shiftType);
               return (
                 <motion.div 
                   key={index} 
@@ -1138,7 +1150,8 @@ const Dashboard = () => {
                     >
                       <i className={`fas ${shiftStyle.icon}`} style={{ color: shiftStyle.color }}></i>
                       <span style={{ color: shiftStyle.color }}>
-                        {t(`schedule.${schedule.shift}`) || schedule.shift}
+                        {schedule.shiftType ? (t(`schedule.${schedule.shiftType}`) || schedule.shiftType) : 
+                         `${schedule.startTime || '09:00'} - ${schedule.endTime || '18:00'}`}
                       </span>
                     </motion.div>
                   </div>
