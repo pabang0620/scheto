@@ -1561,8 +1561,12 @@ const validatePatterns = async (req, res) => {
 // @access  Private
 const generateAdvanced = async (req, res) => {
   try {
+    console.log('=== Advanced Schedule Generation Started ===');
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+    
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('Validation errors:', errors.array());
       return res.status(400).json({ errors: errors.array() });
     }
 
@@ -1588,13 +1592,75 @@ const generateAdvanced = async (req, res) => {
       }
     } = req.body;
 
+    console.log('Input parameters:');
+    console.log('- Date range:', startDate, 'to', endDate);
+    console.log('- Department:', department);
+    console.log('- Employee IDs:', employeeIds);
+    console.log('- Shift patterns count:', shiftPatterns.length);
+    console.log('- Constraints:', constraints);
+    
     const start = new Date(startDate);
     const end = new Date(endDate);
+    
+    // 입력 파라미터 검증
+    if (shiftPatterns.length === 0) {
+      console.log('ERROR: No shift patterns provided');
+      return res.status(400).json({ 
+        message: 'At least one shift pattern is required',
+        details: 'shiftPatterns 배열이 비어있습니다. 최소 하나의 근무 패턴이 필요합니다.'
+      });
+    }
+    
+    // shiftPatterns 검증
+    for (let i = 0; i < shiftPatterns.length; i++) {
+      const pattern = shiftPatterns[i];
+      console.log(`Validating shift pattern ${i}:`, pattern);
+      
+      if (!pattern.daysOfWeek || !Array.isArray(pattern.daysOfWeek) || pattern.daysOfWeek.length === 0) {
+        console.log(`ERROR: Pattern ${i} has invalid daysOfWeek:`, pattern.daysOfWeek);
+        return res.status(400).json({ 
+          message: `Shift pattern ${i} has invalid daysOfWeek`,
+          details: 'daysOfWeek는 0-6 사이의 숫자 배열이어야 합니다 (0=일요일, 6=토요일)'
+        });
+      }
+      
+      // daysOfWeek 범위 검증 (0-6)
+      const invalidDays = pattern.daysOfWeek.filter(day => typeof day !== 'number' || day < 0 || day > 6);
+      if (invalidDays.length > 0) {
+        console.log(`ERROR: Pattern ${i} has invalid day values:`, invalidDays);
+        return res.status(400).json({ 
+          message: `Shift pattern ${i} has invalid day values: ${invalidDays.join(', ')}`,
+          details: 'daysOfWeek 배열의 각 요소는 0-6 사이의 숫자여야 합니다 (0=일요일, 6=토요일)'
+        });
+      }
+      
+      if (!pattern.startTime || !pattern.endTime) {
+        console.log(`ERROR: Pattern ${i} missing time information`);
+        return res.status(400).json({ 
+          message: `Shift pattern ${i} is missing startTime or endTime`,
+          details: 'startTime과 endTime은 필수입니다 (예: "09:00", "18:00")'
+        });
+      }
+    }
+    
+    console.log('All shift patterns validated successfully');
 
     // Get employees with full data
     let employeeWhere = {};
-    if (department) employeeWhere.department = department;
-    if (employeeIds.length > 0) employeeWhere.id = { in: employeeIds.map(id => parseInt(id)) };
+    if (department) {
+      employeeWhere.department = department;
+      console.log('Filtering by department:', department);
+    }
+    if (employeeIds.length > 0) {
+      const parsedIds = employeeIds.map(id => parseInt(id)).filter(id => !isNaN(id));
+      if (parsedIds.length !== employeeIds.length) {
+        console.log('WARNING: Some employee IDs could not be parsed:', employeeIds);
+      }
+      employeeWhere.id = { in: parsedIds };
+      console.log('Filtering by employee IDs:', parsedIds);
+    }
+    
+    console.log('Employee query where clause:', employeeWhere);
 
     const employees = await prisma.employee.findMany({
       where: employeeWhere,
@@ -1619,6 +1685,30 @@ const generateAdvanced = async (req, res) => {
             }]
           }
         }
+      }
+    });
+    
+    console.log(`Found ${employees.length} employees matching criteria`);
+    if (employees.length === 0) {
+      console.log('ERROR: No employees found with the given criteria');
+      return res.status(400).json({ 
+        message: 'No employees found with the given criteria',
+        details: '지정된 조건에 맞는 직원이 없습니다. 부서나 직원 ID를 확인하세요.',
+        criteria: { department, employeeIds }
+      });
+    }
+    
+    employees.forEach(emp => {
+      console.log(`Employee ${emp.id} (${emp.name}):`);
+      console.log(`  - Department: ${emp.department}`);
+      console.log(`  - Abilities: ${emp.abilities.length}`);
+      console.log(`  - Preferences: ${emp.preferences.length}`);
+      console.log(`  - Existing schedules in period: ${emp.schedules.length}`);
+      console.log(`  - Approved leaves in period: ${emp.leaves.length}`);
+      if (emp.leaves.length > 0) {
+        emp.leaves.forEach(leave => {
+          console.log(`    - Leave: ${leave.type} from ${leave.startDate.toISOString().split('T')[0]} to ${leave.endDate.toISOString().split('T')[0]}`);
+        });
       }
     });
 
@@ -1663,17 +1753,31 @@ const generateAdvanced = async (req, res) => {
 
     // Generate schedules day by day
     const currentDate = new Date(start);
+    let totalDaysProcessed = 0;
+    let totalSchedulesCreated = 0;
+    
+    console.log('\n=== Starting day-by-day schedule generation ===');
+    
     while (currentDate <= end) {
       const dayOfWeek = currentDate.getDay();
       const dateStr = currentDate.toISOString().split('T')[0];
       const weekKey = `${currentDate.getFullYear()}-${Math.floor(currentDate.getTime() / (7 * 24 * 60 * 60 * 1000))}`;
+      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      
+      console.log(`\n--- Processing ${dateStr} (${dayNames[dayOfWeek]}, dayOfWeek=${dayOfWeek}) ---`);
+      totalDaysProcessed++;
 
       // Find applicable shift patterns for this day
-      const applicablePatterns = shiftPatterns.filter(pattern => 
-        pattern.daysOfWeek && pattern.daysOfWeek.includes(dayOfWeek)
-      );
+      const applicablePatterns = shiftPatterns.filter(pattern => {
+        const hasDay = pattern.daysOfWeek && pattern.daysOfWeek.includes(dayOfWeek);
+        console.log(`Pattern "${pattern.name || 'unnamed'}" (days: ${pattern.daysOfWeek}) applies to ${dayNames[dayOfWeek]}: ${hasDay}`);
+        return hasDay;
+      });
+      
+      console.log(`Found ${applicablePatterns.length} applicable patterns for ${dayNames[dayOfWeek]}`);
 
       if (applicablePatterns.length === 0) {
+        console.log(`No applicable patterns for ${dateStr}, skipping day`);
         currentDate.setDate(currentDate.getDate() + 1);
         continue;
       }
@@ -1683,12 +1787,20 @@ const generateAdvanced = async (req, res) => {
         const staffRequired = pattern.staffRequired || 1;
 
         // Calculate employee scores for this shift
+        console.log(`\n  Evaluating employees for pattern "${pattern.name || 'unnamed'}" (${pattern.startTime}-${pattern.endTime})`);
+        
         const eligibleEmployees = employees.filter(emp => {
+          const stats = employeeStats.get(emp.id);
+          
           // Check if employee is on leave
           const isOnLeave = emp.leaves.some(leave => {
             const leaveStart = new Date(leave.startDate);
             const leaveEnd = new Date(leave.endDate);
-            return currentDate >= leaveStart && currentDate <= leaveEnd;
+            const onLeave = currentDate >= leaveStart && currentDate <= leaveEnd;
+            if (onLeave) {
+              console.log(`    ${emp.name} is on leave (${leave.type}: ${leave.startDate.toISOString().split('T')[0]} - ${leave.endDate.toISOString().split('T')[0]})`);
+            }
+            return onLeave;
           });
           
           if (isOnLeave) return false;
@@ -1696,21 +1808,25 @@ const generateAdvanced = async (req, res) => {
           // Check if already scheduled for this date
           const hasSchedule = emp.schedules.some(schedule => {
             const schedDate = new Date(schedule.date);
-            return schedDate.toDateString() === currentDate.toDateString();
+            const sameDate = schedDate.toDateString() === currentDate.toDateString();
+            if (sameDate) {
+              console.log(`    ${emp.name} already has a schedule on ${dateStr}`);
+            }
+            return sameDate;
           });
           
           if (hasSchedule) return false;
-
-          const stats = employeeStats.get(emp.id);
           
           // Check consecutive days constraint
           if (constraints.maxConsecutiveDays && stats.consecutiveDays >= constraints.maxConsecutiveDays) {
+            console.log(`    ${emp.name} exceeds max consecutive days (${stats.consecutiveDays}/${constraints.maxConsecutiveDays})`);
             return false;
           }
           
           // Check weekly hours constraint
           const currentWeekHours = stats.weeklyHours.get(weekKey) || 0;
           if (constraints.maxWeeklyHours && (currentWeekHours + shiftHours) > constraints.maxWeeklyHours) {
+            console.log(`    ${emp.name} would exceed weekly hours limit (${currentWeekHours + shiftHours}/${constraints.maxWeeklyHours})`);
             return false;
           }
           
@@ -1718,18 +1834,24 @@ const generateAdvanced = async (req, res) => {
           if (constraints.minRestHours && stats.lastScheduledDate) {
             const timeSinceLastShift = (currentDate.getTime() - stats.lastScheduledDate.getTime()) / (1000 * 60 * 60);
             if (timeSinceLastShift < constraints.minRestHours) {
+              console.log(`    ${emp.name} doesn't have enough rest hours (${timeSinceLastShift.toFixed(1)}/${constraints.minRestHours})`);
               return false;
             }
           }
           
+          console.log(`    ${emp.name} is eligible for this shift`);
           return true;
         });
+        
+        console.log(`  Found ${eligibleEmployees.length} eligible employees out of ${employees.length} total`);
 
         // Score eligible employees
+        console.log(`\n  Scoring ${eligibleEmployees.length} eligible employees:`);
         const scoredEmployees = eligibleEmployees.map(emp => {
           let score = 0;
-          const ability = emp.abilities[0];
+          const ability = emp.abilities && emp.abilities.length > 0 ? emp.abilities[0] : null;
           const stats = employeeStats.get(emp.id);
+          const scoreBreakdown = {};
           
           // Ability-based scoring
           if (ability) {
@@ -1740,43 +1862,63 @@ const generateAdvanced = async (req, res) => {
               (ability.flexibility || 1) * 1 +
               (ability.teamChemistry || 1) * 1
             ) / 9;
-            score += abilityScore * priorities.abilityWeight * 10;
+            const abilityPoints = abilityScore * priorities.abilityWeight * 10;
+            score += abilityPoints;
+            scoreBreakdown.ability = abilityPoints;
+          } else {
+            scoreBreakdown.ability = 0;
           }
           
           // Preference-based scoring
+          let preferencePoints = 0;
           if (constraints.respectPreferences && emp.preferences && emp.preferences.length > 0) {
             const preference = emp.preferences[0];
             const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
             const dayName = dayNames[dayOfWeek];
             
             if (preference.preferDays && preference.preferDays.includes(dayName)) {
-              score += priorities.preferenceWeight * 10;
+              preferencePoints += priorities.preferenceWeight * 10;
             }
             if (preference.avoidDays && preference.avoidDays.includes(dayName)) {
-              score -= priorities.preferenceWeight * 5;
+              preferencePoints -= priorities.preferenceWeight * 5;
             }
           }
+          score += preferencePoints;
+          scoreBreakdown.preference = preferencePoints;
           
           // Fair distribution (favor employees with fewer scheduled days)
+          let fairnessPoints = 0;
           if (constraints.fairDistribution) {
             const avgScheduledDays = Array.from(employeeStats.values())
               .reduce((sum, s) => sum + s.scheduledDays, 0) / employeeStats.size;
-            const fairnessBonus = (avgScheduledDays - stats.scheduledDays) * 2;
-            score += fairnessBonus;
+            fairnessPoints = (avgScheduledDays - stats.scheduledDays) * 2;
+            score += fairnessPoints;
           }
+          scoreBreakdown.fairness = fairnessPoints;
           
           // Seniority bonus (based on hire date)
-          const yearsOfService = (new Date() - new Date(emp.hireDate)) / (365.25 * 24 * 60 * 60 * 1000);
-          score += yearsOfService * priorities.seniorityWeight;
+          let seniorityPoints = 0;
+          if (emp.hireDate) {
+            const yearsOfService = (new Date() - new Date(emp.hireDate)) / (365.25 * 24 * 60 * 60 * 1000);
+            seniorityPoints = yearsOfService * priorities.seniorityWeight;
+            score += seniorityPoints;
+          }
+          scoreBreakdown.seniority = seniorityPoints;
           
           // Availability bonus (favor less scheduled employees)
-          const availabilityBonus = (50 - stats.totalHours) * priorities.availabilityWeight;
-          score += availabilityBonus;
+          const availabilityPoints = (50 - stats.totalHours) * priorities.availabilityWeight;
+          score += availabilityPoints;
+          scoreBreakdown.availability = availabilityPoints;
+          
+          const finalScore = Math.max(0, score);
+          
+          console.log(`    ${emp.name}: ${finalScore.toFixed(2)} (ability:${scoreBreakdown.ability.toFixed(1)}, pref:${scoreBreakdown.preference.toFixed(1)}, fair:${scoreBreakdown.fairness.toFixed(1)}, senior:${scoreBreakdown.seniority.toFixed(1)}, avail:${scoreBreakdown.availability.toFixed(1)})`);
           
           return {
             employee: emp,
-            score: Math.max(0, score),
-            stats
+            score: finalScore,
+            stats,
+            scoreBreakdown
           };
         });
 
@@ -1784,6 +1926,8 @@ const generateAdvanced = async (req, res) => {
         scoredEmployees.sort((a, b) => b.score - a.score);
 
         // Select employees avoiding chemistry conflicts
+        console.log(`\n  Selecting ${staffRequired} employees from ${scoredEmployees.length} candidates:`);
+        
         const selectedEmployees = [];
         for (const candidate of scoredEmployees) {
           if (selectedEmployees.length >= staffRequired) break;
@@ -1791,48 +1935,72 @@ const generateAdvanced = async (req, res) => {
           const emp = candidate.employee;
           
           // Check chemistry conflicts with already selected employees
-          const hasChemistryConflict = constraints.avoidPoorChemistry && selectedEmployees.some(selected => {
-            const conflict = chemistry.find(chem => 
-              ((chem.employee1Id === emp.id && chem.employee2Id === selected.employee.id) ||
-               (chem.employee1Id === selected.employee.id && chem.employee2Id === emp.id)) &&
-              chem.score <= 2
-            );
-            return !!conflict;
-          });
+          let hasChemistryConflict = false;
+          let conflictDetails = null;
+          
+          if (constraints.avoidPoorChemistry) {
+            for (const selected of selectedEmployees) {
+              const conflict = chemistry.find(chem => 
+                ((chem.employee1Id === emp.id && chem.employee2Id === selected.employee.id) ||
+                 (chem.employee1Id === selected.employee.id && chem.employee2Id === emp.id)) &&
+                chem.score <= 2
+              );
+              
+              if (conflict) {
+                hasChemistryConflict = true;
+                conflictDetails = { with: selected.employee.name, score: conflict.score };
+                console.log(`    ${emp.name} has poor chemistry with ${selected.employee.name} (score: ${conflict.score})`);
+                break;
+              }
+            }
+          }
           
           if (!hasChemistryConflict) {
             selectedEmployees.push(candidate);
+            console.log(`    ✓ Selected ${emp.name} (score: ${candidate.score.toFixed(2)})`);
+          } else {
+            console.log(`    ✗ Skipped ${emp.name} due to chemistry conflict`);
           }
         }
         
+        console.log(`  Selected ${selectedEmployees.length}/${staffRequired} employees`);
+        
         // If not enough staff and chemistry conflicts prevented selection, force add
         if (selectedEmployees.length < staffRequired) {
+          console.log(`  Need ${staffRequired - selectedEmployees.length} more employees, forcing selection despite chemistry conflicts...`);
           const remaining = scoredEmployees.filter(candidate => 
             !selectedEmployees.some(selected => selected.employee.id === candidate.employee.id)
           );
           
           while (selectedEmployees.length < staffRequired && remaining.length > 0) {
-            selectedEmployees.push(remaining.shift());
+            const forced = remaining.shift();
+            selectedEmployees.push(forced);
+            console.log(`    ✓ Force-selected ${forced.employee.name} (score: ${forced.score.toFixed(2)})`);
           }
         }
         
         if (selectedEmployees.length < staffRequired) {
+          console.log(`  ⚠️  Still insufficient staff: ${selectedEmployees.length}/${staffRequired}`);
           conflicts.push({
             type: 'insufficient_staff',
             date: dateStr,
-            pattern: pattern.name,
+            pattern: pattern.name || 'unnamed',
             required: staffRequired,
-            available: selectedEmployees.length
+            available: selectedEmployees.length,
+            message: `${dateStr}에 "${pattern.name || 'unnamed'}" 패턴에 필요한 ${staffRequired}명 중 ${selectedEmployees.length}명만 배치 가능`
           });
         }
 
         // Create schedules
+        console.log(`\n  Creating schedules for ${selectedEmployees.length} selected employees:`);
         for (const selected of selectedEmployees) {
           try {
+            console.log(`    Creating schedule for ${selected.employee.name}...`);
+            
             const schedule = await prisma.schedule.create({
               data: {
                 employeeId: selected.employee.id,
-                date: currentDate,
+                date: new Date(currentDate), // 새로운 Date 객체 생성
                 startTime: pattern.startTime,
                 endTime: pattern.endTime,
                 shiftType: pattern.name || 'custom',
@@ -1853,12 +2021,15 @@ const generateAdvanced = async (req, res) => {
             });
 
             generatedSchedules.push(schedule);
+            totalSchedulesCreated++;
+            
+            console.log(`    ✓ Created schedule ID ${schedule.id} for ${selected.employee.name}`);
             
             // Update employee statistics
             const stats = selected.stats;
             stats.scheduledDays++;
             stats.totalHours += shiftHours;
-            stats.lastScheduledDate = currentDate;
+            stats.lastScheduledDate = new Date(currentDate);
             
             // Update consecutive days counter
             const yesterday = new Date(currentDate);
@@ -1878,11 +2049,14 @@ const generateAdvanced = async (req, res) => {
             stats.weeklyHours.set(weekKey, currentWeekHours + shiftHours);
             
           } catch (error) {
+            console.log(`    ✗ Failed to create schedule for ${selected.employee.name}: ${error.message}`);
             conflicts.push({
               type: 'creation_error',
               date: dateStr,
               employeeId: selected.employee.id,
-              error: error.message
+              employeeName: selected.employee.name,
+              error: error.message,
+              errorCode: error.code
             });
           }
         }
@@ -1891,6 +2065,11 @@ const generateAdvanced = async (req, res) => {
       currentDate.setDate(currentDate.getDate() + 1);
     }
 
+    console.log('\n=== Schedule Generation Completed ===');
+    console.log(`Processed ${totalDaysProcessed} days`);
+    console.log(`Created ${totalSchedulesCreated} schedules`);
+    console.log(`Found ${conflicts.length} conflicts`);
+    
     // Generate summary statistics
     const totalDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
     const employeeSummary = Array.from(employeeStats.entries()).map(([empId, stats]) => {
@@ -1905,27 +2084,107 @@ const generateAdvanced = async (req, res) => {
         utilizationRate: stats.scheduledDays / totalDays
       };
     });
+    
+    console.log('\nEmployee Summary:');
+    employeeSummary.forEach(emp => {
+      console.log(`  ${emp.name}: ${emp.scheduledDays} days, ${emp.totalHours.toFixed(1)} hours, ${(emp.utilizationRate * 100).toFixed(1)}% utilization`);
+    });
+    
+    if (conflicts.length > 0) {
+      console.log('\nConflicts found:');
+      conflicts.forEach((conflict, i) => {
+        console.log(`  ${i + 1}. ${conflict.type} on ${conflict.date}: ${conflict.message || conflict.error}`);
+      });
+    }
 
+    const avgUtilization = employeeSummary.length > 0 ? 
+      employeeSummary.reduce((sum, emp) => sum + emp.utilizationRate, 0) / employeeSummary.length : 0;
+    
+    const successMessage = generatedSchedules.length > 0 ? 
+      `일정 생성이 완료되었습니다. ${generatedSchedules.length}개의 스케줄이 생성되었습니다.` :
+      '일정이 생성되지 않았습니다. 조건을 확인하고 다시 시도해주세요.';
+    
+    console.log(`\nFinal result: ${successMessage}`);
+    
     res.status(201).json({
-      message: `Advanced schedule generation completed. Created ${generatedSchedules.length} schedules.`,
+      message: successMessage,
+      success: generatedSchedules.length > 0,
       summary: {
         totalDays,
+        daysProcessed: totalDaysProcessed,
         schedulesCreated: generatedSchedules.length,
         conflictsFound: conflicts.length,
         patternsUsed: shiftPatterns.length,
         employeesInvolved: employees.length,
-        averageUtilization: employeeSummary.reduce((sum, emp) => sum + emp.utilizationRate, 0) / employeeSummary.length
+        averageUtilization: avgUtilization,
+        utilizationPercentage: `${(avgUtilization * 100).toFixed(1)}%`
       },
       schedules: generatedSchedules,
       conflicts,
       employeeSummary,
       constraints,
-      priorities
+      priorities,
+      debugInfo: {
+        inputEmployeeIds: employeeIds,
+        foundEmployees: employees.map(e => ({ id: e.id, name: e.name, department: e.department })),
+        shiftPatternsValidated: shiftPatterns.map(p => ({
+          name: p.name,
+          daysOfWeek: p.daysOfWeek,
+          startTime: p.startTime,
+          endTime: p.endTime,
+          staffRequired: p.staffRequired
+        }))
+      }
     });
     
   } catch (error) {
     console.error('Generate advanced schedules error:', error);
-    res.status(500).json({ message: 'Server error generating advanced schedules' });
+    
+    // Provide detailed error messages based on the error type
+    let statusCode = 500;
+    let errorMessage = 'Server error generating advanced schedules';
+    let errorDetails = null;
+    
+    if (error.code === 'P2002') {
+      statusCode = 409;
+      errorMessage = '일정 생성 중 중복된 데이터가 발견되었습니다. 동일한 날짜에 이미 일정이 존재할 수 있습니다.';
+      errorDetails = '같은 직원이 동일한 날짜에 이미 스케줄이 있는지 확인하세요.';
+    } else if (error.code === 'P2003') {
+      statusCode = 400;
+      errorMessage = '참조 데이터를 찾을 수 없습니다. 선택한 직원이나 부서가 존재하지 않을 수 있습니다.';
+      errorDetails = '직원 정보와 부서 정보가 올바른지 확인하세요.';
+    } else if (error.code === 'P2025') {
+      statusCode = 404;
+      errorMessage = '요청한 데이터를 찾을 수 없습니다.';
+      errorDetails = '선택한 직원이나 설정이 삭제되었을 수 있습니다.';
+    } else if (error.message && error.message.includes('validation')) {
+      statusCode = 400;
+      errorMessage = '입력 데이터 검증에 실패했습니다.';
+      errorDetails = error.message;
+    } else if (error.message && error.message.includes('permission')) {
+      statusCode = 403;
+      errorMessage = '권한이 없습니다.';
+      errorDetails = '이 작업을 수행할 권한이 없습니다.';
+    } else if (error.message && error.message.includes('timeout')) {
+      statusCode = 408;
+      errorMessage = '요청 시간이 초과되었습니다.';
+      errorDetails = '일정 생성 범위가 너무 크거나 직원이 너무 많습니다. 범위를 줄여서 다시 시도하세요.';
+    } else if (error.name === 'PrismaClientKnownRequestError') {
+      statusCode = 400;
+      errorMessage = '데이터베이스 요청 오류가 발생했습니다.';
+      errorDetails = `오류 코드: ${error.code}`;
+    } else if (error.name === 'PrismaClientValidationError') {
+      statusCode = 400;
+      errorMessage = '데이터 형식이 올바르지 않습니다.';
+      errorDetails = '날짜, 시간 형식이나 필수 필드를 확인하세요.';
+    }
+    
+    res.status(statusCode).json({ 
+      message: errorMessage,
+      details: errorDetails,
+      errorCode: error.code || 'UNKNOWN_ERROR',
+      timestamp: new Date().toISOString()
+    });
   }
 };
 
