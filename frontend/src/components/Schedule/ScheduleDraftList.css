@@ -1,0 +1,169 @@
+/* Schedule Draft List Styles */
+.schedule-draft-list {
+  width: 100%;
+}
+
+.draft-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: var(--color-surface);
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+}
+
+.draft-list-header h2 {
+  color: var(--color-text-primary);
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.list-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
+.total-drafts {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
+.selected-drafts {
+  color: var(--color-primary);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.selection-info {
+  background: var(--color-info-bg);
+  border: 1px solid var(--color-info-border);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.selection-info p {
+  margin: 0;
+  color: var(--color-info-text);
+  font-size: 0.9rem;
+}
+
+.draft-list-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+/* Empty State */
+.draft-list-empty {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
+.empty-state {
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.empty-state h3 {
+  margin: 0 0 0.5rem 0;
+  color: var(--color-text-primary);
+  font-size: 1.25rem;
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 0.9rem;
+  max-width: 300px;
+}
+
+/* Active Draft Info */
+.active-draft-info {
+  margin-top: 2rem;
+}
+
+.info-card {
+  background: linear-gradient(135deg, var(--color-success-bg), var(--color-success-light));
+  border: 1px solid var(--color-success-border);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.info-card h3 {
+  color: var(--color-success-dark);
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.info-card p {
+  color: var(--color-success-text);
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .draft-list-grid {
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .draft-list-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .list-stats {
+    align-items: center;
+  }
+
+  .draft-list-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .selection-info {
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .draft-list-header {
+    padding: 0.75rem;
+  }
+
+  .draft-list-header h2 {
+    font-size: 1.25rem;
+  }
+
+  .empty-icon {
+    font-size: 3rem;
+  }
+
+  .empty-state h3 {
+    font-size: 1.1rem;
+  }
+
+  .info-card {
+    padding: 1rem;
+  }
+}

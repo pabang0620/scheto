@@ -27,7 +27,8 @@ import AddScheduleModal from './AddScheduleModal';
 import './ScheduleCalendarDnD.css';
 
 // Draggable Schedule Item
-const DraggableSchedule = ({ schedule, isDragging, companySettings }) => {
+const DraggableSchedule = ({ schedule, isDragging, companySettings, onEdit, onDelete }) => {
+  const [showActions, setShowActions] = useState(false);
   const {
     attributes,
     listeners,
@@ -59,14 +60,38 @@ const DraggableSchedule = ({ schedule, isDragging, companySettings }) => {
     });
   };
 
-  const getShiftColor = (shift) => {
-    switch (shift?.toLowerCase()) {
-      case 'morning': return 'shift-morning';
-      case 'afternoon': return 'shift-afternoon';
-      case 'evening': return 'shift-evening';
-      case 'night': return 'shift-night';
-      default: return 'shift-default';
+  const getShiftInfo = (schedule) => {
+    // 근무 시간으로 근무 타입 자동 판별
+    const startHour = parseInt(schedule.startTime?.split(':')[0] || '9');
+    const endHour = parseInt(schedule.endTime?.split(':')[0] || '18');
+    
+    let shiftType = '';
+    let shiftColor = '';
+    let shiftIcon = '';
+    
+    if (startHour >= 5 && startHour < 12) {
+      shiftType = '오전 근무';
+      shiftColor = 'shift-morning';
+      shiftIcon = '☀️';
+    } else if (startHour >= 12 && startHour < 17) {
+      shiftType = '오후 근무';
+      shiftColor = 'shift-afternoon';
+      shiftIcon = '🌤️';
+    } else if (startHour >= 17 && startHour < 21) {
+      shiftType = '저녁 근무';
+      shiftColor = 'shift-evening';
+      shiftIcon = '🌆';
+    } else {
+      shiftType = '야간 근무';
+      shiftColor = 'shift-night';
+      shiftIcon = '🌙';
     }
+    
+    // 근무 시간 계산
+    let duration = endHour - startHour;
+    if (duration < 0) duration += 24; // 자정을 넘어가는 경우
+    
+    return { shiftType, shiftColor, shiftIcon, duration };
   };
 
   const getLeaveTypeBadge = (leaveType) => {
@@ -84,36 +109,81 @@ const DraggableSchedule = ({ schedule, isDragging, companySettings }) => {
   const isOnLeave = companySettings.workType === 'fixed' ? (schedule.isOnLeave || false) : false;
   const leaveType = companySettings.workType === 'fixed' ? schedule.leaveType : null;
   
+  const shiftInfo = getShiftInfo(schedule);
+  
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`schedule-item-dnd ${getShiftColor(schedule.shiftType || schedule.shift)} ${isOnLeave ? 'schedule-on-leave' : ''}`}
-      {...attributes}
-      {...listeners}
+      className={`schedule-item-dnd ${shiftInfo.shiftColor} ${isOnLeave ? 'schedule-on-leave' : ''} ${showActions ? 'show-actions' : ''}`}
+      onMouseEnter={() => setShowActions(true)}
+      onMouseLeave={() => setShowActions(false)}
+      onClick={() => onEdit && onEdit(schedule)}
     >
       <div className="schedule-item-content">
+        <div className="schedule-header">
+          <span className="shift-icon">{shiftInfo.shiftIcon}</span>
+          <span className="shift-type">{shiftInfo.shiftType}</span>
+          <span className="shift-duration">{shiftInfo.duration}시간</span>
+        </div>
         <div className="schedule-employee-row">
-          <span className="schedule-employee">{schedule.employee?.name || '미배정'}</span>
+          <span className="schedule-employee">
+            <i className="fas fa-user"></i> {schedule.employee?.name || '미배정'}
+          </span>
           {isOnLeave && leaveType && (
             <span className="leave-badge">
               {getLeaveTypeBadge(leaveType)}
             </span>
           )}
         </div>
-        <span className="schedule-time">
-          {formatTime(schedule.startTime || '09:00')} - {formatTime(schedule.endTime || '18:00')}
-        </span>
+        <div className="schedule-time-row">
+          <i className="fas fa-clock"></i>
+          <span className="schedule-time">
+            {formatTime(schedule.startTime || '09:00')} - {formatTime(schedule.endTime || '18:00')}
+          </span>
+        </div>
       </div>
-      <div className="drag-handle">
+      <div 
+        className="drag-handle" 
+        {...attributes} 
+        {...listeners} 
+        title="드래그하여 이동"
+        onClick={(e) => e.stopPropagation()}
+      >
         <i className="fas fa-grip-vertical"></i>
       </div>
+      {showActions && (
+        <div className="schedule-actions">
+          <button 
+            className="action-btn edit-btn" 
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit && onEdit(schedule);
+            }}
+            title="스케줄 편집"
+          >
+            <i className="fas fa-edit"></i>
+          </button>
+          <button 
+            className="action-btn delete-btn" 
+            onClick={(e) => {
+              e.stopPropagation();
+              if (confirm('이 스케줄을 삭제하시겠습니까?')) {
+                onDelete && onDelete(schedule.id);
+              }
+            }}
+            title="스케줄 삭제"
+          >
+            <i className="fas fa-trash"></i>
+          </button>
+        </div>
+      )}
     </div>
   );
 };
 
 // Droppable Day Cell
-const DroppableDay = ({ date, schedules, leaves, companySettings, onDrop, onScheduleClick, onAddClick, isToday, isCurrentMonth }) => {
+const DroppableDay = ({ date, schedules, leaves, companySettings, onDrop, onScheduleClick, onAddClick, onEdit, onDelete, isToday, isCurrentMonth }) => {
   const { t, language } = useLanguage();
   const dateString = date.toISOString().split('T')[0];
   const droppableId = `day-${dateString}`;
@@ -214,6 +284,8 @@ const DroppableDay = ({ date, schedules, leaves, companySettings, onDrop, onSche
               schedule={schedule}
               isDragging={false}
               companySettings={companySettings}
+              onEdit={onEdit}
+              onDelete={onDelete}
             />
           ))}
         </SortableContext>
@@ -523,6 +595,25 @@ const ScheduleCalendarDnD = () => {
     setShowAddModal(true);
   };
 
+  const handleScheduleEdit = (schedule) => {
+    setEditingSchedule(schedule);
+    setSelectedDate(schedule.date);
+    setShowAddModal(true);
+  };
+
+  const handleScheduleDelete = async (scheduleId) => {
+    try {
+      await deleteSchedule(scheduleId);
+      await fetchSchedules();
+      // 성공 메시지 표시
+      setError('');
+      console.log('스케줄이 성공적으로 삭제되었습니다.');
+    } catch (err) {
+      console.error('Failed to delete schedule:', err);
+      setError(t('schedule.failedToDelete'));
+    }
+  };
+
   const handleScheduleSubmit = async (formData) => {
     try {
       if (editingSchedule) {
@@ -611,6 +702,8 @@ const ScheduleCalendarDnD = () => {
                     onDrop={handleScheduleDrop}
                     onScheduleClick={handleScheduleClick}
                     onAddClick={handleAddClick}
+                    onEdit={handleScheduleEdit}
+                    onDelete={handleScheduleDelete}
                     isToday={isToday(day)}
                     isCurrentMonth={isCurrentMonth(day)}
                   />
@@ -709,6 +802,28 @@ const ScheduleCalendarDnD = () => {
 
       {error && <div className="error-message">{error}</div>}
 
+      {/* 사용 가이드 헬프 */}
+      <div className="schedule-help-banner">
+        <div className="help-items">
+          <div className="help-item">
+            <i className="fas fa-grip-vertical"></i>
+            <span>스케줄을 드래그하여 날짜 변경</span>
+          </div>
+          <div className="help-item">
+            <i className="fas fa-plus"></i>
+            <span>+ 버튼으로 새 스케줄 추가</span>
+          </div>
+          <div className="help-item">
+            <i className="fas fa-edit"></i>
+            <span>마우스를 올려 편집/삭제 버튼 표시</span>
+          </div>
+          <div className="help-item">
+            <i className="fas fa-info-circle"></i>
+            <span>같은 날짜 내에서도 순서 변경 가능</span>
+          </div>
+        </div>
+      </div>
+
       {/* Employee Filter Banner */}
       {employeeId && employeeName && (
         <div className="employee-filter-banner">
@@ -770,6 +885,7 @@ const ScheduleCalendarDnD = () => {
         onSubmit={handleScheduleSubmit}
         selectedDate={selectedDate}
         editingSchedule={editingSchedule}
+        existingSchedules={schedules}
       />
     </div>
   );

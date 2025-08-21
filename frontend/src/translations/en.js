@@ -43,7 +43,9 @@ const en = {
     noAbilities: 'Abilities not set',
     notAssigned: 'Not assigned',
     dataNotEntered: 'Not entered',
-    roleNotAssigned: 'Role not assigned'
+    roleNotAssigned: 'Role not assigned',
+    showMore: 'Show More',
+    showLess: 'Show Less'
   },
   
   navigation: {
@@ -540,6 +542,177 @@ const en = {
     noNotices: 'No new notices',
     readAll: 'Read all',
     unreadCount: 'Unread'
+  },
+
+  scheduleManagement: {
+    title: 'Schedule Draft Management',
+    
+    draftList: {
+      title: 'Draft List',
+      totalDrafts: 'Total {count} drafts',
+      selectedDrafts: '{count}/{max} selected',
+      selectionHint: 'You can select up to {max} drafts for comparison'
+    },
+
+    card: {
+      createdAt: 'Created',
+      period: 'Period',
+      employees: 'Employees',
+      score: 'Score',
+      totalShifts: 'Total Shifts',
+      coverage: 'Coverage',
+      generationSettings: 'Generation Settings',
+      conflicts: 'Conflicts',
+      moreConflicts: 'more conflicts'
+    },
+
+    status: {
+      active: 'Active',
+      pending: 'Pending',
+      approved: 'Approved',
+      rejected: 'Rejected',
+      draft: 'Draft',
+      currentlyActive: 'Currently Active'
+    },
+
+    actions: {
+      compare: 'Compare',
+      stopComparing: 'Stop Comparing',
+      activate: 'Activate',
+      delete: 'Delete',
+      duplicate: 'Duplicate',
+      export: 'Export',
+      merge: 'Merge'
+    },
+
+    emptyState: {
+      title: 'No drafts available',
+      description: 'Create a new schedule draft to get started'
+    },
+
+    activeDraft: {
+      title: 'Current Active Schedule',
+      description: '{name} has been active since {date}'
+    },
+
+    comparison: {
+      title: 'Schedule Comparison',
+      summary: 'Comparison Summary',
+      metric: 'Metric',
+      difference: 'Difference',
+      noChange: 'No change',
+      conflicts: 'Conflicts',
+      affectedEmployees: 'Affected employees',
+      
+      tabs: {
+        overview: 'Overview',
+        metrics: 'Metrics',
+        schedule: 'Schedule',
+        conflicts: 'Conflicts'
+      },
+
+      loadError: 'Failed to load comparison data'
+    },
+    
+    merge: {
+      title: 'Merge Schedule Drafts',
+      
+      steps: {
+        options: 'Options',
+        preview: 'Preview'
+      },
+      
+      options: {
+        title: 'Merge Options',
+        name: 'Merged Draft Name',
+        description: 'Description',
+        conflictResolution: 'Conflict Resolution Strategy',
+        priorityOrder: 'Priority Order',
+        mergeStrategy: 'Merge Strategy',
+        preserveMetadata: 'Preserve Metadata'
+      },
+      
+      resolution: {
+        priority: 'Priority Based',
+        latest: 'Latest Version',
+        combine: 'Combine Non-Conflicting'
+      },
+      
+      strategy: {
+        combine: 'Combine All',
+        overwrite: 'Overwrite',
+        selective: 'Selective Merge'
+      },
+      
+      preview: {
+        title: 'Merge Preview',
+        totalDrafts: 'Total Drafts',
+        totalItems: 'Total Items',
+        totalConflicts: 'Total Conflicts',
+        draftDetails: 'Draft Details',
+        conflicts: 'Conflicts',
+        timeOverlap: 'Time Overlap',
+        noData: 'No preview data available'
+      },
+      
+      actions: {
+        preview: 'Preview',
+        merge: 'Merge',
+        merging: 'Merging...'
+      },
+      
+      errors: {
+        previewFailed: 'Failed to load merge preview',
+        mergeFailed: 'Failed to merge drafts'
+      }
+    },
+
+    activation: {
+      title: 'Activate Schedule',
+      summary: 'Activation Summary',
+      draftName: 'Draft Name',
+      period: 'Period',
+      employees: 'Employees',
+      totalShifts: 'Total Shifts',
+      currentSchedule: 'Current Schedule',
+      currentScheduleDescription: '{name} has been active since {activatedDate}',
+      impactAnalysis: 'Impact Analysis',
+      confirmation: 'Confirmation',
+      confirmationInstructions: 'Type "{draftName}" to continue',
+      typeDraftName: 'Type draft name',
+      confirmActivation: 'Confirm Activation',
+      activating: 'Activating...',
+      blockingWarning: 'Cannot activate due to errors. Please resolve issues first.',
+
+      warnings: {
+        replaceActive: 'Current active schedule will be replaced',
+        hasConflicts: 'There are {count} conflicts',
+        lowScore: 'Low score ({score}%)',
+        lowCoverage: 'Low coverage ({coverage}%)'
+      },
+
+      showAdvancedOptions: 'Show Advanced Options',
+      hideAdvancedOptions: 'Hide Advanced Options',
+
+      options: {
+        notifyEmployees: 'Notify employees',
+        notifyEmployeesDesc: 'Send email notifications to employees about schedule changes',
+        sendScheduleUpdates: 'Send schedule updates',
+        sendScheduleUpdatesDesc: 'Send the new schedule to employees',
+        archiveCurrentSchedule: 'Archive current schedule',
+        archiveCurrentScheduleDesc: 'Archive the currently active schedule',
+        backupCurrentSchedule: 'Backup current schedule',
+        backupCurrentScheduleDesc: 'Create a backup of the current schedule'
+      }
+    },
+
+    errors: {
+      loadFailed: 'Failed to load drafts',
+      activationFailed: 'Failed to activate schedule',
+      deleteFailed: 'Failed to delete draft'
+    },
+
+    confirmDelete: 'Are you sure you want to delete this draft? This action cannot be undone.'
   }
 };
 

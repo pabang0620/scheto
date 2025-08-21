@@ -1,10 +1,26 @@
 import React, { useState } from 'react';
 import './ShiftPatternManager.css';
 
-const ShiftPatternManager = ({ patterns, onPatternsChange, onSave }) => {
+const ShiftPatternManager = ({ patterns, onPatternsChange, onSave, experienceLevels, onExperienceLevelsChange }) => {
   const [editingPattern, setEditingPattern] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [expandedPatterns, setExpandedPatterns] = useState({}); // Track which patterns are expanded
+  const [showExperienceLevelConfig, setShowExperienceLevelConfig] = useState(false);
+  const [localExperienceLevels, setLocalExperienceLevels] = useState(
+    experienceLevels || [
+      { id: 1, name: '3년차', years: 3, enabled: true },
+      { id: 2, name: '5년차', years: 5, enabled: true },
+      { id: 3, name: '7년차', years: 7, enabled: false },
+      { id: 4, name: '10년차', years: 10, enabled: false }
+    ]
+  );
+  
+  const updateExperienceLevels = (newLevels) => {
+    setLocalExperienceLevels(newLevels);
+    if (onExperienceLevelsChange) {
+      onExperienceLevelsChange(newLevels);
+    }
+  };
   
   const colorOptions = [
     '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
@@ -23,8 +39,8 @@ const ShiftPatternManager = ({ patterns, onPatternsChange, onSave }) => {
       minRankS: 0,
       minRankA: 0,
       minRankB: 0,
-      minExperience3Years: 0,
-      minExperience5Years: 0
+      minRankC: 0,
+      experienceLevels: {}
     }
   };
   
@@ -302,73 +318,161 @@ const ShiftPatternManager = ({ patterns, onPatternsChange, onSave }) => {
                           </button>
                         </div>
                       </div>
+                      
+                      <div className="requirement-item">
+                        <span className="rank-badge rank-c">C급</span>
+                        <div className="requirement-input">
+                          <button 
+                            className="req-btn"
+                            onClick={() => {
+                              const reqs = pattern.requirements || {};
+                              handleUpdatePattern(pattern.id, 'requirements', {
+                                ...reqs,
+                                minRankC: Math.max(0, (reqs.minRankC || 0) - 1)
+                              });
+                            }}
+                          >
+                            <i className="fas fa-minus"></i>
+                          </button>
+                          <span className="req-count">{pattern.requirements?.minRankC || 0}명</span>
+                          <button 
+                            className="req-btn"
+                            onClick={() => {
+                              const reqs = pattern.requirements || {};
+                              handleUpdatePattern(pattern.id, 'requirements', {
+                                ...reqs,
+                                minRankC: (reqs.minRankC || 0) + 1
+                              });
+                            }}
+                          >
+                            <i className="fas fa-plus"></i>
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   
                   <div className="requirement-group">
-                    <span className="requirement-label">경력별 최소 인원</span>
+                    <div className="requirement-label-with-config">
+                      <span className="requirement-label">경력별 최소 인원</span>
+                      <button 
+                        className="config-btn"
+                        onClick={() => setShowExperienceLevelConfig(!showExperienceLevelConfig)}
+                        title="경력 레벨 설정"
+                      >
+                        <i className="fas fa-cog"></i>
+                      </button>
+                    </div>
+                    
+                    {showExperienceLevelConfig && (
+                      <div className="experience-level-config">
+                        <div className="config-header">
+                          <span className="config-title">경력 레벨 설정</span>
+                          <button 
+                            className="add-level-btn"
+                            onClick={() => {
+                              const nextYear = Math.max(...localExperienceLevels.map(l => l.years)) + 1;
+                              const newLevel = {
+                                id: Date.now(),
+                                name: `${nextYear}년차`,
+                                years: nextYear,
+                                enabled: true
+                              };
+                              updateExperienceLevels([...localExperienceLevels, newLevel]);
+                            }}
+                          >
+                            <i className="fas fa-plus"></i> 추가
+                          </button>
+                        </div>
+                        <div className="level-list">
+                          {localExperienceLevels.map(level => (
+                            <div key={level.id} className="level-item">
+                              <input
+                                type="checkbox"
+                                checked={level.enabled}
+                                onChange={(e) => {
+                                  updateExperienceLevels(localExperienceLevels.map(l => 
+                                    l.id === level.id ? { ...l, enabled: e.target.checked } : l
+                                  ));
+                                }}
+                              />
+                              <input
+                                type="number"
+                                className="level-years-input"
+                                value={level.years}
+                                min="1"
+                                max="50"
+                                onChange={(e) => {
+                                  const years = parseInt(e.target.value) || 1;
+                                  updateExperienceLevels(localExperienceLevels.map(l => 
+                                    l.id === level.id ? { 
+                                      ...l, 
+                                      years: years,
+                                      name: `${years}년차`
+                                    } : l
+                                  ));
+                                }}
+                              />
+                              <span className="level-display-name">{level.name} 이상</span>
+                              {localExperienceLevels.length > 1 && (
+                                <button
+                                  className="remove-level-btn"
+                                  onClick={() => {
+                                    updateExperienceLevels(localExperienceLevels.filter(l => l.id !== level.id));
+                                  }}
+                                >
+                                  <i className="fas fa-trash"></i>
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
                     <div className="requirement-controls">
-                      <div className="requirement-item">
-                        <span className="experience-badge">3년차↑</span>
-                        <div className="requirement-input">
-                          <button 
-                            className="req-btn"
-                            onClick={() => {
-                              const reqs = pattern.requirements || {};
-                              handleUpdatePattern(pattern.id, 'requirements', {
-                                ...reqs,
-                                minExperience3Years: Math.max(0, (reqs.minExperience3Years || 0) - 1)
-                              });
-                            }}
-                          >
-                            <i className="fas fa-minus"></i>
-                          </button>
-                          <span className="req-count">{pattern.requirements?.minExperience3Years || 0}명</span>
-                          <button 
-                            className="req-btn"
-                            onClick={() => {
-                              const reqs = pattern.requirements || {};
-                              handleUpdatePattern(pattern.id, 'requirements', {
-                                ...reqs,
-                                minExperience3Years: (reqs.minExperience3Years || 0) + 1
-                              });
-                            }}
-                          >
-                            <i className="fas fa-plus"></i>
-                          </button>
-                        </div>
-                      </div>
-                      
-                      <div className="requirement-item">
-                        <span className="experience-badge">5년차↑</span>
-                        <div className="requirement-input">
-                          <button 
-                            className="req-btn"
-                            onClick={() => {
-                              const reqs = pattern.requirements || {};
-                              handleUpdatePattern(pattern.id, 'requirements', {
-                                ...reqs,
-                                minExperience5Years: Math.max(0, (reqs.minExperience5Years || 0) - 1)
-                              });
-                            }}
-                          >
-                            <i className="fas fa-minus"></i>
-                          </button>
-                          <span className="req-count">{pattern.requirements?.minExperience5Years || 0}명</span>
-                          <button 
-                            className="req-btn"
-                            onClick={() => {
-                              const reqs = pattern.requirements || {};
-                              handleUpdatePattern(pattern.id, 'requirements', {
-                                ...reqs,
-                                minExperience5Years: (reqs.minExperience5Years || 0) + 1
-                              });
-                            }}
-                          >
-                            <i className="fas fa-plus"></i>
-                          </button>
-                        </div>
-                      </div>
+                      {localExperienceLevels.filter(level => level.enabled).map(level => {
+                        const reqs = pattern.requirements || {};
+                        const expLevels = reqs.experienceLevels || {};
+                        const currentValue = expLevels[level.id] || 0;
+                        
+                        return (
+                          <div key={level.id} className="requirement-item">
+                            <span className="experience-badge">{level.name}↑</span>
+                            <div className="requirement-input">
+                              <button 
+                                className="req-btn"
+                                onClick={() => {
+                                  handleUpdatePattern(pattern.id, 'requirements', {
+                                    ...reqs,
+                                    experienceLevels: {
+                                      ...expLevels,
+                                      [level.id]: Math.max(0, currentValue - 1)
+                                    }
+                                  });
+                                }}
+                              >
+                                <i className="fas fa-minus"></i>
+                              </button>
+                              <span className="req-count">{currentValue}명</span>
+                              <button 
+                                className="req-btn"
+                                onClick={() => {
+                                  handleUpdatePattern(pattern.id, 'requirements', {
+                                    ...reqs,
+                                    experienceLevels: {
+                                      ...expLevels,
+                                      [level.id]: currentValue + 1
+                                    }
+                                  });
+                                }}
+                              >
+                                <i className="fas fa-plus"></i>
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>

@@ -270,13 +270,17 @@
   padding: 6px 8px;
   border-radius: 6px;
   font-size: 12px;
-  cursor: grab;
+  cursor: pointer;
   transition: all 0.2s;
   position: relative;
   display: flex;
   justify-content: space-between;
   align-items: center;
   border: 1px solid transparent;
+}
+
+.schedule-item-dnd:active:not(.dragging) {
+  transform: scale(0.98);
 }
 
 .schedule-item-dnd:active {
@@ -312,8 +316,8 @@
 }
 
 .drag-handle {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -321,6 +325,7 @@
   opacity: 0;
   transition: opacity 0.2s;
   cursor: grab;
+  margin-left: 4px;
 }
 
 .schedule-item-dnd:hover .drag-handle {
@@ -329,6 +334,85 @@
 
 .drag-handle:active {
   cursor: grabbing;
+}
+
+/* Schedule Actions */
+.schedule-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  margin-left: 4px;
+}
+
+.schedule-item-dnd.show-actions .schedule-actions {
+  opacity: 1;
+}
+
+.action-btn {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  font-size: 12px;
+}
+
+.action-btn:hover {
+  transform: scale(1.1);
+}
+
+.edit-btn {
+  color: #3b5bdb;
+}
+
+.edit-btn:hover {
+  background: #3b5bdb;
+  color: white;
+}
+
+.delete-btn {
+  color: #f03e3e;
+}
+
+.delete-btn:hover {
+  background: #f03e3e;
+  color: white;
+}
+
+/* Help Banner */
+.schedule-help-banner {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
+.help-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  justify-content: center;
+}
+
+.help-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: white;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.help-item i {
+  font-size: 14px;
+  opacity: 0.9;
 }
 
 /* Shift Colors */
@@ -348,13 +432,24 @@
 }
 
 .shift-night {
-  background: #e0e7ff;
-  color: #312e81;
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+  color: #e0e7ff;
+  border-color: #4c1d95;
+}
+
+.shift-night .shift-type {
+  color: #c7d2fe;
+}
+
+.shift-night .schedule-employee,
+.shift-night .schedule-time {
+  color: #e0e7ff;
 }
 
 .shift-default {
-  background: #f3f4f6;
+  background: linear-gradient(135deg, #f9fafb 0%, #e5e7eb 100%);
   color: #374151;
+  border-color: #d1d5db;
 }
 
 /* Leave Styling */
@@ -565,6 +660,81 @@
   padding: 1px 4px;
   font-size: 9px;
   font-weight: 600;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .schedule-help-banner {
+    padding: 12px 16px;
+  }
+  
+  .help-items {
+    gap: 16px;
+  }
+  
+  .help-item {
+    font-size: 12px;
+    flex: 0 0 calc(50% - 8px);
+  }
+  
+  .schedule-item-dnd {
+    padding: 8px;
+  }
+  
+  .drag-handle {
+    width: 24px;
+    height: 24px;
+    opacity: 1;
+  }
+  
+  .schedule-actions {
+    opacity: 1;
+  }
+  
+  .action-btn {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .calendar-toolbar {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .calendar-navigation {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .calendar-actions {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Tooltip for drag handle */
+.drag-handle:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #191f28;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  animation: fadeIn 0.2s forwards;
+  margin-bottom: 4px;
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
 }
 
 

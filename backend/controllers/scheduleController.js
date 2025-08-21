@@ -1701,11 +1701,11 @@ const generateAdvanced = async (req, res) => {
     employees.forEach(emp => {
       console.log(`Employee ${emp.id} (${emp.name}):`);
       console.log(`  - Department: ${emp.department}`);
-      console.log(`  - Abilities: ${emp.abilities.length}`);
-      console.log(`  - Preferences: ${emp.preferences.length}`);
-      console.log(`  - Existing schedules in period: ${emp.schedules.length}`);
-      console.log(`  - Approved leaves in period: ${emp.leaves.length}`);
-      if (emp.leaves.length > 0) {
+      console.log(`  - Abilities: ${emp.abilities ? emp.abilities.length : 0}`);
+      console.log(`  - Preferences: ${emp.preferences ? emp.preferences.length : 0}`);
+      console.log(`  - Existing schedules in period: ${emp.schedules ? emp.schedules.length : 0}`);
+      console.log(`  - Approved leaves in period: ${emp.leaves ? emp.leaves.length : 0}`);
+      if (emp.leaves && emp.leaves.length > 0) {
         emp.leaves.forEach(leave => {
           console.log(`    - Leave: ${leave.type} from ${leave.startDate.toISOString().split('T')[0]} to ${leave.endDate.toISOString().split('T')[0]}`);
         });
@@ -1793,7 +1793,7 @@ const generateAdvanced = async (req, res) => {
           const stats = employeeStats.get(emp.id);
           
           // Check if employee is on leave
-          const isOnLeave = emp.leaves.some(leave => {
+          const isOnLeave = emp.leaves && emp.leaves.some(leave => {
             const leaveStart = new Date(leave.startDate);
             const leaveEnd = new Date(leave.endDate);
             const onLeave = currentDate >= leaveStart && currentDate <= leaveEnd;
@@ -1805,17 +1805,18 @@ const generateAdvanced = async (req, res) => {
           
           if (isOnLeave) return false;
 
-          // Check if already scheduled for this date
-          const hasSchedule = emp.schedules.some(schedule => {
-            const schedDate = new Date(schedule.date);
-            const sameDate = schedDate.toDateString() === currentDate.toDateString();
-            if (sameDate) {
-              console.log(`    ${emp.name} already has a schedule on ${dateStr}`);
-            }
-            return sameDate;
-          });
-          
-          if (hasSchedule) return false;
+          // Don't check for existing schedules - allow duplicates to be generated
+          // These will be managed through the draft system
+          // const hasSchedule = emp.schedules.some(schedule => {
+          //   const schedDate = new Date(schedule.date);
+          //   const sameDate = schedDate.toDateString() === currentDate.toDateString();
+          //   if (sameDate) {
+          //     console.log(`    ${emp.name} already has a schedule on ${dateStr}`);
+          //   }
+          //   return sameDate;
+          // });
+          // 
+          // if (hasSchedule) return false;
           
           // Check consecutive days constraint
           if (constraints.maxConsecutiveDays && stats.consecutiveDays >= constraints.maxConsecutiveDays) {

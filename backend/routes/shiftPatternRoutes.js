@@ -13,6 +13,11 @@ const authMiddleware = require('../middlewares/authMiddleware');
 // @access  Private
 router.get('/', shiftPatternController.getShiftPatterns);
 
+// @route   PUT /api/shift-patterns/bulk/update
+// @desc    Bulk update patterns
+// @access  Private
+router.put('/bulk/update', shiftPatternController.bulkUpdatePatterns);
+
 // @route   GET /api/shift-patterns/:id
 // @desc    Get single shift pattern
 // @access  Private
@@ -39,10 +44,5 @@ router.put('/:id', [
 // @desc    Delete shift pattern
 // @access  Private
 router.delete('/:id', shiftPatternController.deleteShiftPattern);
-
-// @route   PUT /api/shift-patterns/bulk
-// @desc    Bulk update patterns
-// @access  Private
-router.put('/bulk/update', shiftPatternController.bulkUpdatePatterns);
 
 module.exports = router;

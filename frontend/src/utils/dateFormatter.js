@@ -151,3 +151,54 @@ export const isFutureDate = (dateString) => {
   
   return date > today;
 };
+
+// 시간 포맷 유틸리티 함수
+export const formatTime = (timeString, language = 'ko') => {
+  if (!timeString) return '';
+  
+  // HH:MM 형식의 문자열 처리
+  if (typeof timeString === 'string' && timeString.includes(':')) {
+    const [hours, minutes] = timeString.split(':').map(num => parseInt(num));
+    
+    if (language === 'ko') {
+      const period = hours < 12 ? '오전' : '오후';
+      const displayHours = hours % 12 || 12;
+      return `${period} ${displayHours}:${String(minutes).padStart(2, '0')}`;
+    } else {
+      const period = hours < 12 ? 'AM' : 'PM';
+      const displayHours = hours % 12 || 12;
+      return `${displayHours}:${String(minutes).padStart(2, '0')} ${period}`;
+    }
+  }
+  
+  // Date 객체 처리
+  const date = new Date(timeString);
+  if (isNaN(date.getTime())) return '';
+  
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  
+  if (language === 'ko') {
+    const period = hours < 12 ? '오전' : '오후';
+    const displayHours = hours % 12 || 12;
+    return `${period} ${displayHours}:${String(minutes).padStart(2, '0')}`;
+  } else {
+    const period = hours < 12 ? 'AM' : 'PM';
+    const displayHours = hours % 12 || 12;
+    return `${displayHours}:${String(minutes).padStart(2, '0')} ${period}`;
+  }
+};
+
+// 시간 범위 포맷 유틸리티 함수
+export const formatTimeRange = (startTime, endTime, language = 'ko') => {
+  if (!startTime || !endTime) return '';
+  
+  const formattedStart = formatTime(startTime, language);
+  const formattedEnd = formatTime(endTime, language);
+  
+  if (language === 'ko') {
+    return `${formattedStart} ~ ${formattedEnd}`;
+  } else {
+    return `${formattedStart} - ${formattedEnd}`;
+  }
+};

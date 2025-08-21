@@ -201,11 +201,14 @@ const bulkUpdatePatterns = async (req, res) => {
     const result = await prisma.$transaction(async (tx) => {
       // Delete patterns not in the list (optional)
       if (req.body.deleteOthers) {
-        const patternIds = patterns.filter(p => p.id).map(p => p.id);
+        const patternIds = patterns.filter(p => p.id && typeof p.id === 'number' && p.id < 1000000000000).map(p => p.id);
         await tx.shiftPattern.deleteMany({
           where: {
-            companyId: parseInt(companyId),
-            NOT: { id: { in: patternIds } }
+            OR: [
+              { companyId: parseInt(companyId) },
+              { companyId: null } // Also delete template patterns
+            ],
+            NOT: { id: { in: patternIds.length > 0 ? patternIds : [-1] } } // Use -1 as placeholder if no IDs
           }
         });
       }
@@ -219,8 +222,11 @@ const bulkUpdatePatterns = async (req, res) => {
         let duration = (end - start) / (1000 * 60);
         if (duration < 0) duration += 24 * 60;
         
-        if (pattern.id) {
-          // Update existing pattern
+        // Check if ID is a temporary frontend ID (usually large number from Date.now())
+        const isTemporaryId = pattern.id && (typeof pattern.id === 'number' && pattern.id > 1000000000000);
+        
+        if (pattern.id && !isTemporaryId) {
+          // Update existing pattern only if it's not a temporary ID
           const updated = await tx.shiftPattern.update({
             where: { id: pattern.id },
             data: {

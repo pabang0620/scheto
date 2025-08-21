@@ -172,6 +172,31 @@ export const settings = {
   deleteScheduleTemplate: (id) => api.delete(`/settings/schedule-templates/${id}`),
 };
 
+// Shift Pattern API endpoints
+export const shiftPatterns = {
+  getAll: (params = {}) => api.get('/shift-patterns', { params }),
+  getById: (id) => api.get(`/shift-patterns/${id}`),
+  create: (data) => api.post('/shift-patterns', data),
+  update: (id, data) => api.put(`/shift-patterns/${id}`, data),
+  delete: (id) => api.delete(`/shift-patterns/${id}`),
+  bulkUpdate: (patterns) => api.put('/shift-patterns/bulk/update', { patterns })
+};
+
+// Schedule Draft API endpoints
+export const scheduleDrafts = {
+  getAll: (params = {}) => api.get('/schedule-drafts', { params }),
+  getById: (id) => api.get(`/schedule-drafts/${id}`),
+  create: (data) => api.post('/schedule-drafts', data),
+  update: (id, data) => api.put(`/schedule-drafts/${id}`, data),
+  delete: (id) => api.delete(`/schedule-drafts/${id}`),
+  updateStatus: (id, status) => api.patch(`/schedule-drafts/${id}/status`, { status }),
+  activate: (id, options = {}) => api.post(`/schedule-drafts/${id}/activate`, options),
+  duplicate: (id, data) => api.post(`/schedule-drafts/${id}/duplicate`, data),
+  getStats: () => api.get('/schedule-drafts/stats'),
+  merge: (draftIds, options) => api.post('/schedule-drafts/merge', { draftIds, ...options }),
+  previewMerge: (draftIds, options) => api.post('/schedule-drafts/merge/preview', { draftIds, ...options })
+};
+
 // Company API endpoints
 export const company = {
   getSettings: () => api.get('/company/settings'),
@@ -210,16 +235,6 @@ export const notices = {
   markAsRead: (id) => api.put(`/notices/${id}/read`),
   markAllAsRead: () => api.put('/notices/read-all'),
   getUnreadCount: () => api.get('/notices/unread-count'),
-};
-
-// Shift Patterns API endpoints
-export const shiftPatterns = {
-  getAll: (companyId) => api.get('/shift-patterns', { params: { companyId } }),
-  getById: (id) => api.get(`/shift-patterns/${id}`),
-  create: (data) => api.post('/shift-patterns', data),
-  update: (id, data) => api.put(`/shift-patterns/${id}`, data),
-  delete: (id) => api.delete(`/shift-patterns/${id}`),
-  bulkUpdate: (data) => api.put('/shift-patterns/bulk/update', data),
 };
 
 // Convenience functions that match the old API structure
@@ -270,6 +285,15 @@ export const createShiftPattern = shiftPatterns.create;
 export const updateShiftPattern = shiftPatterns.update;
 export const deleteShiftPattern = shiftPatterns.delete;
 export const bulkUpdateShiftPatterns = shiftPatterns.bulkUpdate;
+
+// Export scheduleDrafts convenience functions
+export const getScheduleDrafts = scheduleDrafts.getAll;
+export const getScheduleDraft = scheduleDrafts.getById;
+export const createScheduleDraft = scheduleDrafts.create;
+export const updateScheduleDraft = scheduleDrafts.update;
+export const deleteScheduleDraft = scheduleDrafts.delete;
+export const activateScheduleDraft = scheduleDrafts.activate;
+export const compareScheduleDrafts = scheduleDrafts.compare;
 
 export const getScheduleTemplates = settings.getScheduleTemplates;
 

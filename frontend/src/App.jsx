@@ -19,8 +19,8 @@ import EmployeeForm from './components/Employee/EmployeeForm';
 import EmployeeAbilities from './components/Employee/EmployeeAbilities';
 import ScheduleCalendarDnD from './components/Schedule/ScheduleCalendarDnD';
 import AutoGenerate from './components/Schedule/AutoGenerate';
-import AutoGenerateV2 from './components/Schedule/AutoGenerateV2';
 import ScheduleAutoGenerator from './components/Schedule/ScheduleAutoGenerator';
+import ScheduleManagement from './components/Schedule/ScheduleManagement';
 import LeaveRequest from './components/Leave/LeaveRequest';
 import CompanySettings from './components/Settings/CompanySettings';
 import NoticeManagement from './components/Notice/NoticeManagement';
@@ -82,14 +82,14 @@ const AppLayout = () => {
               {/* Schedule Management */}
               <Route path="/schedules" element={<ScheduleCalendarDnD />} />
               <Route path="/schedules/new" element={<ScheduleCalendarDnD />} />
+              <Route path="/schedules/management" element={
+                <RoleRoute requiredRole="manager">
+                  <ScheduleManagement />
+                </RoleRoute>
+              } />
               <Route path="/schedules/auto-generate" element={
                 <RoleRoute requiredRole="manager">
                   <ScheduleAutoGenerator />
-                </RoleRoute>
-              } />
-              <Route path="/schedules/auto-generate-v2" element={
-                <RoleRoute requiredRole="manager">
-                  <AutoGenerateV2 />
                 </RoleRoute>
               } />
               <Route path="/schedules/auto-generate-v1" element={

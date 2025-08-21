@@ -5,7 +5,7 @@ import {
   getEmployeeAbility,
   getLeaveRequests,
   getSchedules,
-  generateSchedule,
+  schedules,
   updateSchedule,
   getShiftPatterns,
   bulkUpdateShiftPatterns
@@ -40,6 +40,12 @@ const ScheduleAutoGenerator = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   
+  // Scroll to top when step changes
+  const handleStepChange = (newStep) => {
+    setCurrentStep(newStep);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  
   // Core data
   const [employees, setEmployees] = useState([]);
   const [employeeAbilities, setEmployeeAbilities] = useState({});
@@ -52,6 +58,14 @@ const ScheduleAutoGenerator = () => {
     selectedEmployees: [],
     existingSchedules: null
   });
+  
+  // Experience Levels Configuration
+  const [experienceLevels, setExperienceLevels] = useState([
+    { id: 1, name: '3년차', years: 3, enabled: true },
+    { id: 2, name: '5년차', years: 5, enabled: true },
+    { id: 3, name: '7년차', years: 7, enabled: false },
+    { id: 4, name: '10년차', years: 10, enabled: false }
+  ]);
   
   // Step 2: Shift Patterns & Conditions
   const [shiftPatterns, setShiftPatterns] = useState([
@@ -68,8 +82,8 @@ const ScheduleAutoGenerator = () => {
         minRankS: 0,
         minRankA: 0,
         minRankB: 0,
-        minExperience3Years: 0,
-        minExperience5Years: 0
+        minRankC: 0,
+        experienceLevels: {}
       }
     }
   ]);
@@ -144,7 +158,9 @@ const ScheduleAutoGenerator = () => {
   // Load shift patterns from database
   const loadShiftPatterns = async () => {
     try {
-      const res = await getShiftPatterns(1); // TODO: Get actual company ID
+      console.log('Loading shift patterns...');
+      const res = await getShiftPatterns({ companyId: 1 }); // Pass as params object
+      console.log('Shift patterns response:', res.data);
       const patterns = res.data?.patterns || [];
       
       if (patterns.length > 0) {
@@ -160,7 +176,10 @@ const ScheduleAutoGenerator = () => {
           days: Array.isArray(p.days) ? p.days : JSON.parse(p.days || '[1,2,3,4,5]'),
           requirements: typeof p.requirements === 'object' ? p.requirements : JSON.parse(p.requirements || '{}')
         }));
+        console.log('Formatted patterns:', formattedPatterns);
         setShiftPatterns(formattedPatterns);
+      } else {
+        console.log('No patterns loaded, keeping defaults');
       }
     } catch (err) {
       console.error('Failed to load shift patterns:', err);
@@ -283,9 +302,16 @@ const ScheduleAutoGenerator = () => {
       rankS: selectedEmps.filter(e => employeeAbilities[e.id]?.rank === 'S').length,
       rankA: selectedEmps.filter(e => employeeAbilities[e.id]?.rank === 'A').length,
       rankB: selectedEmps.filter(e => employeeAbilities[e.id]?.rank === 'B').length,
-      exp3Years: selectedEmps.filter(e => e.yearsOfExperience >= 3).length,
-      exp5Years: selectedEmps.filter(e => e.yearsOfExperience >= 5).length
+      rankC: selectedEmps.filter(e => employeeAbilities[e.id]?.rank === 'C').length
     };
+    
+    // Count employees for each experience level
+    const experienceCounts = {};
+    experienceLevels.filter(level => level.enabled).forEach(level => {
+      experienceCounts[level.id] = selectedEmps.filter(e => 
+        (e.yearsOfExperience || 0) >= level.years
+      ).length;
+    });
     
     // Check if any pattern's requirements exceed available staff
     const warnings = [];
@@ -301,12 +327,19 @@ const ScheduleAutoGenerator = () => {
       if (reqs.minRankB > counts.rankB) {
         warnings.push(`${pattern.name}: B급 ${reqs.minRankB}명 필요 (현재 ${counts.rankB}명)`);
       }
-      if (reqs.minExperience3Years > counts.exp3Years) {
-        warnings.push(`${pattern.name}: 3년차↑ ${reqs.minExperience3Years}명 필요 (현재 ${counts.exp3Years}명)`);
+      if (reqs.minRankC > counts.rankC) {
+        warnings.push(`${pattern.name}: C급 ${reqs.minRankC}명 필요 (현재 ${counts.rankC}명)`);
       }
-      if (reqs.minExperience5Years > counts.exp5Years) {
-        warnings.push(`${pattern.name}: 5년차↑ ${reqs.minExperience5Years}명 필요 (현재 ${counts.exp5Years}명)`);
-      }
+      
+      // Check experience level requirements
+      const expLevels = reqs.experienceLevels || {};
+      experienceLevels.filter(level => level.enabled).forEach(level => {
+        const required = expLevels[level.id] || 0;
+        const available = experienceCounts[level.id] || 0;
+        if (required > available) {
+          warnings.push(`${pattern.name}: ${level.name}↑ ${required}명 필요 (현재 ${available}명)`);
+        }
+      });
     }
     
     return warnings;
@@ -314,6 +347,8 @@ const ScheduleAutoGenerator = () => {
 
   // Generate schedule
   const handleGenerateSchedule = async () => {
+    console.log('=== handleGenerateSchedule 함수 시작 ===');
+    
     // Validate requirements first
     const warnings = validateRequirements();
     if (warnings.length > 0) {
@@ -331,32 +366,109 @@ const ScheduleAutoGenerator = () => {
         startDate: periodData.startDate,
         endDate: periodData.endDate,
         employeeIds: periodData.selectedEmployees,
-        shifts: shiftPatterns.filter(p => p.enabled).map(p => ({
-          type: p.name,
-          start: p.start,
-          end: p.end,
-          staff: p.requiredStaff,
-          days: p.days,
+        shiftPatterns: shiftPatterns.filter(p => p.enabled).map(p => ({
+          name: p.name,
+          startTime: p.start,
+          endTime: p.end,
+          staffRequired: p.requiredStaff,
+          daysOfWeek: p.days,
           requirements: p.requirements || {}
         })),
-        conflicts: workConditions.conflicts.map(c => ({
-          employee1: c.emp1Id,
-          employee2: c.emp2Id
-        })),
-        priorityHours: workConditions.priorityHours,
-        maxConsecutiveDays: workConditions.maxConsecutiveDays,
-        minRestDays: workConditions.minRestDays,
-        avoidWeekends: workConditions.avoidWeekends,
-        balanceWorkload: workConditions.balanceWorkload,
-        employeeAbilities: employeeAbilities
+        constraints: {
+          maxConsecutiveDays: workConditions.maxConsecutiveDays,
+          minRestHours: 10,
+          maxWeeklyHours: 45,
+          respectPreferences: true,
+          avoidPoorChemistry: workConditions.conflicts.length > 0,
+          fairDistribution: workConditions.balanceWorkload
+        },
+        priorities: {
+          seniorityWeight: 0.2,
+          abilityWeight: 0.4,
+          preferenceWeight: 0.3,
+          availabilityWeight: 0.1
+        }
       };
       
-      const res = await generateSchedule(requestData);
-      setGeneratedSchedule(res.data);
-      setSuccess('스케줄이 성공적으로 생성되었습니다!');
-      setCurrentStep(3);
+      const response = await schedules.generateAdvanced(requestData);
+      
+      // 디버깅용 - 실제 응답 구조 확인
+      window.DEBUG_RESPONSE = response;
+      console.log('Schedule generation response received:', response);
+      
+      // Axios는 실제 데이터를 response.data에 담아서 반환
+      const apiResponse = response.data || response;
+      
+      // Transform the response data into the expected format
+      const transformedData = {
+        ...apiResponse,
+        schedulesByDate: {}
+      };
+      
+      // Group schedules by date
+      if (apiResponse.schedules && Array.isArray(apiResponse.schedules)) {
+        apiResponse.schedules.forEach(schedule => {
+          const dateStr = schedule.date.split('T')[0];
+          if (!transformedData.schedulesByDate[dateStr]) {
+            transformedData.schedulesByDate[dateStr] = [];
+          }
+          transformedData.schedulesByDate[dateStr].push(schedule);
+        });
+      }
+      
+      // 디버깅용
+      window.DEBUG_TRANSFORMED = transformedData;
+      console.log('Transformed data:', transformedData);
+      
+      setGeneratedSchedule(transformedData);
+      setSuccess(`스케줄이 성공적으로 생성되었습니다! ${apiResponse.schedules?.length || 0}개의 스케줄이 생성되었습니다.`);
+      handleStepChange(3);
     } catch (err) {
-      setError(err.response?.data?.message || '스케줄 생성에 실패했습니다.');
+      console.error('=== 스케줄 생성 에러 ===', err);
+      
+      // 상세한 에러 메시지 처리
+      let errorMessage = '스케줄 생성에 실패했습니다.';
+      
+      if (err.response?.data?.errors && Array.isArray(err.response.data.errors)) {
+        // Validation errors from express-validator
+        const errors = err.response.data.errors.map(e => `• ${e.msg}`).join('\n');
+        errorMessage = `입력 검증 실패:\n${errors}`;
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err.response?.status === 400) {
+        errorMessage = '요청 데이터가 올바르지 않습니다. 모든 필수 항목을 확인해주세요.';
+      } else if (err.response?.status === 401) {
+        errorMessage = '인증이 필요합니다. 다시 로그인해주세요.';
+      } else if (err.response?.status === 403) {
+        errorMessage = '권한이 없습니다. 관리자 계정으로 로그인해주세요.';
+      } else if (err.response?.status === 404) {
+        errorMessage = '요청한 리소스를 찾을 수 없습니다.';
+      } else if (err.response?.status === 500) {
+        errorMessage = '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+      } else if (err.message) {
+        errorMessage = `오류: ${err.message}`;
+      }
+      
+      // 추가 정보가 있는 경우
+      if (err.response?.data?.details) {
+        errorMessage += `\n\n상세 정보: ${err.response.data.details}`;
+      }
+      
+      // 충돌 정보가 있는 경우
+      if (err.response?.data?.conflicts && err.response.data.conflicts.length > 0) {
+        const conflicts = err.response.data.conflicts.map(c => 
+          `• ${c.date}: ${c.message || c.type}`
+        ).join('\n');
+        errorMessage += `\n\n발견된 충돌:\n${conflicts}`;
+      }
+      
+      setError(errorMessage);
+      console.error('Schedule generation error:', err);
+      
+      // 에러가 발생하면 현재 스텝에 머무르기
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setLoading(false);
     }
@@ -366,30 +478,61 @@ const ScheduleAutoGenerator = () => {
   const handleDragStart = (e, schedule) => {
     setScheduleDragSource(schedule);
     e.dataTransfer.effectAllowed = 'move';
+    e.currentTarget.classList.add('dragging');
+  };
+  
+  const handleDragEnd = (e) => {
+    e.currentTarget.classList.remove('dragging');
   };
   
   const handleDragOver = (e) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
+    e.currentTarget.classList.add('drag-over');
   };
   
-  const handleDrop = async (e, targetDate, targetTime) => {
+  const handleDragLeave = (e) => {
+    e.currentTarget.classList.remove('drag-over');
+  };
+  
+  const handleDrop = async (e, targetDate) => {
     e.preventDefault();
+    e.currentTarget.classList.remove('drag-over');
     
     if (!scheduleDragSource) return;
     
     try {
-      // Update schedule via API
+      // Update the schedule locally first for immediate feedback
+      const updatedSchedules = { ...generatedSchedule };
+      
+      // Remove from original date
+      const sourceDate = new Date(scheduleDragSource.date).toISOString().split('T')[0];
+      if (updatedSchedules.schedulesByDate) {
+        updatedSchedules.schedulesByDate[sourceDate] = 
+          (updatedSchedules.schedulesByDate[sourceDate] || []).filter(s => s.id !== scheduleDragSource.id);
+        
+        // Add to target date
+        if (!updatedSchedules.schedulesByDate[targetDate]) {
+          updatedSchedules.schedulesByDate[targetDate] = [];
+        }
+        updatedSchedules.schedulesByDate[targetDate].push({
+          ...scheduleDragSource,
+          date: targetDate
+        });
+        
+        setGeneratedSchedule(updatedSchedules);
+      }
+      
+      // Update via API
       await updateSchedule(scheduleDragSource.id, {
-        date: targetDate,
-        startTime: targetTime
+        date: targetDate
       });
       
-      // Refresh schedule
-      await handleGenerateSchedule();
-      setSuccess('스케줄이 수정되었습니다.');
+      setSuccess('스케줄이 성공적으로 이동되었습니다.');
     } catch (err) {
       setError('스케줄 수정에 실패했습니다.');
+      // Revert changes on error
+      await handleGenerateSchedule();
     }
     
     setScheduleDragSource(null);
@@ -458,17 +601,31 @@ const ScheduleAutoGenerator = () => {
       
       {/* Alert Messages */}
       {error && (
-        <div className="alert alert-error">
-          <span className="alert-icon"><i className="fas fa-exclamation-triangle"></i></span>
-          <span>{error}</span>
-          <button className="alert-close" onClick={() => setError('')}>×</button>
+        <div className="alert alert-error animate-shake">
+          <div className="alert-icon">
+            <i className="fas fa-exclamation-triangle"></i>
+          </div>
+          <div className="alert-content">
+            <div className="alert-title">오류 발생</div>
+            <div className="alert-message" style={{ whiteSpace: 'pre-line' }}>{error}</div>
+          </div>
+          <button className="alert-close" onClick={() => setError('')}>
+            <i className="fas fa-times"></i>
+          </button>
         </div>
       )}
       {success && (
-        <div className="alert alert-success">
-          <span className="alert-icon">✅</span>
-          <span>{success}</span>
-          <button className="alert-close" onClick={() => setSuccess('')}>×</button>
+        <div className="alert alert-success animate-slide-in">
+          <div className="alert-icon">
+            <i className="fas fa-check-circle"></i>
+          </div>
+          <div className="alert-content">
+            <div className="alert-title">성공</div>
+            <div className="alert-message">{success}</div>
+          </div>
+          <button className="alert-close" onClick={() => setSuccess('')}>
+            <i className="fas fa-times"></i>
+          </button>
         </div>
       )}
       
@@ -612,6 +769,8 @@ const ScheduleAutoGenerator = () => {
               patterns={shiftPatterns}
               onPatternsChange={setShiftPatterns}
               onSave={() => saveShiftPatterns(shiftPatterns)}
+              experienceLevels={experienceLevels}
+              onExperienceLevelsChange={setExperienceLevels}
             />
             
             {/* Simple Rules with Explanations */}
@@ -900,7 +1059,8 @@ const ScheduleAutoGenerator = () => {
                   </div>
                   
                   <div className="schedule-grid">
-                    {Object.entries(generatedSchedule.schedulesByDate || {}).map(([date, schedules]) => (
+                    {generatedSchedule && generatedSchedule.schedulesByDate ? 
+                      Object.entries(generatedSchedule.schedulesByDate).map(([date, schedules]) => (
                       <div key={date} className="day-column">
                         <div className="day-header">{formatDate(date)}</div>
                         <div 
@@ -934,7 +1094,11 @@ const ScheduleAutoGenerator = () => {
                           })}
                         </div>
                       </div>
-                    ))}
+                    )) : (
+                      <div className="no-schedules-message">
+                        <p>생성된 스케줄이 없습니다. 스케줄을 생성해주세요.</p>
+                      </div>
+                    )}
                   </div>
                 </div>
                 
@@ -951,7 +1115,7 @@ const ScheduleAutoGenerator = () => {
                   </button>
                   <button 
                     className="btn btn-ghost btn-lg"
-                    onClick={() => setCurrentStep(2)}
+                    onClick={() => handleStepChange(2)}
                   >
                     <i className="fas fa-cog"></i> 설정 수정
                   </button>
@@ -963,23 +1127,24 @@ const ScheduleAutoGenerator = () => {
       )}
       
       {/* Navigation */}
-      <div className="navigation-controls">
+      <div className={`navigation-controls step-${currentStep}`}>
         {currentStep > 1 && (
           <button 
             className="btn btn-secondary"
-            onClick={() => setCurrentStep(currentStep - 1)}
+            onClick={() => handleStepChange(currentStep - 1)}
           >
-            ← 이전
+            <i className="fas fa-chevron-left"></i> 이전 단계
           </button>
         )}
         
         {currentStep < 3 && (
           <button 
             className="btn btn-primary"
-            onClick={() => setCurrentStep(currentStep + 1)}
+            onClick={() => handleStepChange(currentStep + 1)}
             disabled={!validateStep(currentStep)}
           >
-            다음 →
+            {currentStep === 1 ? '근무 패턴 설정' : '스케줄 생성'} 
+            <i className="fas fa-chevron-right"></i>
           </button>
         )}
       </div>

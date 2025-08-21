@@ -43,7 +43,9 @@ const ko = {
     noAbilities: '능력치 미설정',
     notAssigned: '미지정',
     dataNotEntered: '입력되지 않음',
-    roleNotAssigned: '역할 미지정'
+    roleNotAssigned: '역할 미지정',
+    showMore: '더 보기',
+    showLess: '접기'
   },
   
   navigation: {
@@ -540,6 +542,177 @@ const ko = {
     admin: '관리자',
     manager: '매니저',
     employee: '직원'
+  },
+
+  scheduleManagement: {
+    title: '스케줄 드래프트 관리',
+    
+    draftList: {
+      title: '드래프트 목록',
+      totalDrafts: '총 {count}개의 드래프트',
+      selectedDrafts: '{count}/{max} 선택됨',
+      selectionHint: '비교를 위해 최대 {max}개의 드래프트를 선택할 수 있습니다'
+    },
+
+    card: {
+      createdAt: '생성일',
+      period: '기간',
+      employees: '직원 수',
+      score: '점수',
+      totalShifts: '총 교대',
+      coverage: '커버리지',
+      generationSettings: '생성 설정',
+      conflicts: '충돌 사항',
+      moreConflicts: '개의 추가 충돌'
+    },
+
+    status: {
+      active: '활성',
+      pending: '대기중',
+      approved: '승인됨',
+      rejected: '거부됨',
+      draft: '초안',
+      currentlyActive: '현재 활성'
+    },
+
+    actions: {
+      compare: '비교',
+      stopComparing: '비교 중단',
+      activate: '활성화',
+      delete: '삭제',
+      duplicate: '복제',
+      merge: '병합',
+      export: '내보내기'
+    },
+
+    emptyState: {
+      title: '드래프트가 없습니다',
+      description: '새로운 스케줄 드래프트를 생성하여 시작하세요'
+    },
+
+    activeDraft: {
+      title: '현재 활성 스케줄',
+      description: '{name}이(가) {date}부터 활성화되었습니다'
+    },
+
+    comparison: {
+      title: '스케줄 비교',
+      summary: '비교 요약',
+      metric: '지표',
+      difference: '차이',
+      noChange: '변화 없음',
+      conflicts: '충돌',
+      affectedEmployees: '영향받는 직원',
+      
+      tabs: {
+        overview: '개요',
+        metrics: '지표',
+        schedule: '스케줄',
+        conflicts: '충돌'
+      },
+
+      loadError: '비교 데이터를 불러오는데 실패했습니다'
+    },
+    
+    merge: {
+      title: '스케줄 드래프트 병합',
+      
+      steps: {
+        options: '옵션',
+        preview: '미리보기'
+      },
+      
+      options: {
+        title: '병합 옵션',
+        name: '병합된 드래프트 이름',
+        description: '설명',
+        conflictResolution: '충돌 해결 전략',
+        priorityOrder: '우선순위 순서',
+        mergeStrategy: '병합 전략',
+        preserveMetadata: '메타데이터 보존'
+      },
+      
+      resolution: {
+        priority: '우선순위 기반',
+        latest: '최신 버전',
+        combine: '비충돌 항목 결합'
+      },
+      
+      strategy: {
+        combine: '모두 결합',
+        overwrite: '덮어쓰기',
+        selective: '선택적 병합'
+      },
+      
+      preview: {
+        title: '병합 미리보기',
+        totalDrafts: '전체 드래프트',
+        totalItems: '전체 항목',
+        totalConflicts: '전체 충돌',
+        draftDetails: '드래프트 세부사항',
+        conflicts: '충돌',
+        timeOverlap: '시간 겹침',
+        noData: '미리보기 데이터가 없습니다'
+      },
+      
+      actions: {
+        preview: '미리보기',
+        merge: '병합',
+        merging: '병합 중...'
+      },
+      
+      errors: {
+        previewFailed: '병합 미리보기를 불러오는데 실패했습니다',
+        mergeFailed: '드래프트 병합에 실패했습니다'
+      }
+    },
+
+    activation: {
+      title: '스케줄 활성화',
+      summary: '활성화 요약',
+      draftName: '드래프트명',
+      period: '기간',
+      employees: '직원 수',
+      totalShifts: '총 교대 수',
+      currentSchedule: '현재 스케줄',
+      currentScheduleDescription: '{name}이(가) {activatedDate}부터 활성화되어 있습니다',
+      impactAnalysis: '영향 분석',
+      confirmation: '확인',
+      confirmationInstructions: '계속하려면 "{draftName}"을 입력하세요',
+      typeDraftName: '드래프트명을 입력하세요',
+      confirmActivation: '활성화 확인',
+      activating: '활성화 중...',
+      blockingWarning: '오류가 있어 활성화할 수 없습니다. 먼저 문제를 해결하세요.',
+
+      warnings: {
+        replaceActive: '현재 활성 스케줄이 교체됩니다',
+        hasConflicts: '{count}개의 충돌이 있습니다',
+        lowScore: '점수가 낮습니다 ({score}%)',
+        lowCoverage: '커버리지가 낮습니다 ({coverage}%)'
+      },
+
+      showAdvancedOptions: '고급 옵션 보기',
+      hideAdvancedOptions: '고급 옵션 숨기기',
+
+      options: {
+        notifyEmployees: '직원들에게 알림',
+        notifyEmployeesDesc: '스케줄 변경을 직원들에게 이메일로 알립니다',
+        sendScheduleUpdates: '스케줄 업데이트 전송',
+        sendScheduleUpdatesDesc: '새로운 스케줄을 직원들에게 전송합니다',
+        archiveCurrentSchedule: '현재 스케줄 보관',
+        archiveCurrentScheduleDesc: '현재 활성 스케줄을 보관 처리합니다',
+        backupCurrentSchedule: '현재 스케줄 백업',
+        backupCurrentScheduleDesc: '현재 스케줄의 백업을 생성합니다'
+      }
+    },
+
+    errors: {
+      loadFailed: '드래프트를 불러오는데 실패했습니다',
+      activationFailed: '스케줄 활성화에 실패했습니다',
+      deleteFailed: '드래프트 삭제에 실패했습니다'
+    },
+
+    confirmDelete: '이 드래프트를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.'
   }
 };
 

@@ -8,7 +8,7 @@
 .mobile-section-header {
   text-align: center;
   padding: 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
   color: white;
   border-radius: 20px 20px 0 0;
   margin: -20px -20px 0 -20px;
@@ -72,7 +72,7 @@
   align-items: center;
   gap: 4px;
   padding: 8px 15px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
   color: white;
   border-radius: 20px;
   font-weight: 600;
@@ -112,8 +112,8 @@
 }
 
 .mobile-employee-item.selected {
-  background: linear-gradient(135deg, #667eea15, #764ba215);
-  border-color: #667eea;
+  background: linear-gradient(135deg, #3b82f615, #2563eb15);
+  border-color: #3b82f6;
 }
 
 .mobile-employee-item.on-leave {
@@ -132,7 +132,7 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
   color: white;
   display: flex;
   align-items: center;
@@ -142,7 +142,7 @@
 }
 
 .mobile-employee-item.selected .mobile-employee-avatar {
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
 }
 
 .mobile-employee-info {
@@ -196,7 +196,7 @@
 }
 
 .mobile-experience {
-  background: linear-gradient(135deg, #c084fc, #a855f7);
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
   color: white;
   font-weight: 600;
 }
@@ -224,7 +224,7 @@
 }
 
 .mobile-check-icon.checked {
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
   border-color: transparent;
   color: white;
 }
@@ -262,13 +262,13 @@
 }
 
 .section-header-with-action h3 i {
-  color: #667eea;
+  color: #3b82f6;
   font-size: 18px;
 }
 
 .add-pattern-btn {
   padding: 8px 12px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
   color: white;
   border: none;
   border-radius: 8px;
@@ -296,7 +296,7 @@
 }
 
 .mobile-shift-section h3 i {
-  color: #667eea;
+  color: #3b82f6;
   font-size: 18px;
 }
 
@@ -332,7 +332,7 @@
 
 .preset-btn i {
   font-size: 24px;
-  color: #667eea;
+  color: #3b82f6;
 }
 
 .preset-btn span {
@@ -412,7 +412,7 @@
 }
 
 .mobile-rules-section h3 i {
-  color: #667eea;
+  color: #3b82f6;
   font-size: 18px;
 }
 
@@ -445,7 +445,7 @@
 .rule-icon {
   width: 40px;
   text-align: center;
-  color: #667eea;
+  color: #3b82f6;
 }
 
 .rule-icon i {
@@ -490,10 +490,10 @@
 
 .mobile-btn-small {
   padding: 8px 16px;
-  border: 1px solid #667eea;
+  border: 1px solid #3b82f6;
   border-radius: 8px;
   background: white;
-  color: #667eea;
+  color: #3b82f6;
   font-size: 13px;
   font-weight: 500;
   align-self: flex-end;
@@ -501,9 +501,9 @@
 }
 
 .mobile-btn-small:hover {
-  background: #667eea;
+  background: #3b82f6;
   color: white;
-  border-color: #667eea;
+  border-color: #3b82f6;
 }
 
 .mobile-btn-small:active {
@@ -701,7 +701,7 @@
 .mobile-add-btn {
   width: 100%;
   padding: 12px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
   color: white;
   border: none;
   border-radius: 10px;
